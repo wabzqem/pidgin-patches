@@ -1,0 +1,30 @@
+From bcf6fc5da650c75cf392d8bccf7e4f1069426774 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 14 Oct 2006 01:52:33 +0000
+Subject: [PATCH] [gaim-migrate @ 17477] Patch from Richard Nelson (wabz) to
+ fix a crash in the statusbox.
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : aad6fa01433621023ac42378120e51d84eeccd71
+---
+ console/libgnt/gntcombobox.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/console/libgnt/gntcombobox.c b/console/libgnt/gntcombobox.c
+index db16246..7bdc8fe 100644
+--- a/console/libgnt/gntcombobox.c
++++ b/console/libgnt/gntcombobox.c
+@@ -102,6 +102,8 @@ popup_dropdown(GntComboBox *box)
+ 		mvwin(parent->window, y, widget->priv.x);
+ 		wresize(parent->window, height+2, widget->priv.width);
+ 	}
++	parent->priv.width = widget->priv.width;
++	parent->priv.height = height + 2;
+ 
+ 	gnt_widget_draw(parent);
+ }
+-- 
+1.7.10.4
+

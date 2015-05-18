@@ -1,0 +1,43 @@
+From 2de6c63ff3e5536ed4c4c9b3c3b9ff4c99a055bc Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Wed, 8 Apr 2009 12:35:09 +0000
+Subject: [PATCH] - Don't bother changing/signalling the selected row from
+ NULL to NULL - Ensure the selected row is a visible row
+ when searching the tree.
+
+--HG--
+extra : convert_revision : d3339fef344e4e01a21229a086a44397836f4638
+---
+ finch/libgnt/gnttree.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/finch/libgnt/gnttree.c b/finch/libgnt/gnttree.c
+index a197cf8..6bb4956 100644
+--- a/finch/libgnt/gnttree.c
++++ b/finch/libgnt/gnttree.c
+@@ -432,7 +432,7 @@ redraw_tree(GntTree *tree)
+ 
+ 	if (tree->top == NULL)
+ 		tree->top = tree->root;
+-	if (tree->current == NULL) {
++	if (tree->current == NULL && tree->root != NULL) {
+ 		tree->current = tree->root;
+ 		tree_selection_changed(tree, NULL, tree->current);
+ 	}
+@@ -491,6 +491,13 @@ redraw_tree(GntTree *tree)
+ 		tree->top = get_next(tree->top);
+ 	row = tree->top;
+ 	scrcol = widget->priv.width - 1 - 2 * pos;  /* exclude the borders and the scrollbar */
++
++	if (tree->current && !row_matches_search(tree->current)) {
++		GntTreeRow *old = tree->current;
++		tree->current = tree->top;
++		tree_selection_changed(tree, old, tree->current);
++	}
++
+ 	for (i = start + pos; row && i < widget->priv.height - pos;
+ 				i++, row = get_next(row))
+ 	{
+-- 
+1.7.10.4
+

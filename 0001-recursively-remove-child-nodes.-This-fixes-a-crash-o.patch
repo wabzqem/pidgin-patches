@@ -1,0 +1,57 @@
+From 6c796f112ee704339a22b1f851b9a391cb58be6c Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sun, 25 Feb 2007 10:32:34 +0000
+Subject: [PATCH] recursively remove child nodes. This fixes a crash (often
+ caused by going offline)
+
+--HG--
+extra : convert_revision : c168423591af2529166683316017bf7d909106ce
+---
+ console/libgnt/gnttree.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/console/libgnt/gnttree.c b/console/libgnt/gnttree.c
+index 7f0120d..e9d5319 100644
+--- a/console/libgnt/gnttree.c
++++ b/console/libgnt/gnttree.c
+@@ -1171,18 +1171,17 @@ GList *gnt_tree_get_selection_text_list(GntTree *tree)
+ void gnt_tree_remove(GntTree *tree, gpointer key)
+ {
+ 	GntTreeRow *row = g_hash_table_lookup(tree->hash, key);
++	static int depth = 0; /* Only redraw after all child nodes are removed */
+ 	if (row)
+ 	{
+ 		gboolean redraw = FALSE;
+ 
+ 		if (row->child) {
+-			GntTreeRow *ch = row->child;
+-			while (ch) {
+-				GntTreeRow *n = ch->next;
+-				tree->list = g_list_remove(tree->list, ch->key);
+-				g_hash_table_remove(tree->hash, ch->key);
+-				ch = n;
++			depth++;
++			while (row->child) {
++				gnt_tree_remove(tree, row->child->key);
+ 			}
++			depth--;
+ 		}
+ 
+ 		if (get_distance(tree->top, row) >= 0 && get_distance(row, tree->bottom) >= 0)
+@@ -1218,11 +1217,11 @@ void gnt_tree_remove(GntTree *tree, gpointer key)
+ 			row->parent->child = row->next;
+ 		if (row->prev)
+ 			row->prev->next = row->next;
+-		
++
+ 		g_hash_table_remove(tree->hash, key);
+ 		tree->list = g_list_remove(tree->list, key);
+ 
+-		if (redraw)
++		if (redraw && depth == 0)
+ 		{
+ 			redraw_tree(tree);
+ 		}
+-- 
+1.7.10.4
+

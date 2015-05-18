@@ -1,0 +1,28 @@
+From e65fc8fbdc3f411ef776d2e15a67ca81ce2ed85c Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Fri, 2 Mar 2007 03:50:03 +0000
+Subject: [PATCH] gnttree can have a size of 1. This fixes <sadrul> meh.
+ gntcombobox crashes if it has only one item in it
+
+--HG--
+extra : convert_revision : e95e1afaa2d9727242d84ec2ec2fe88e353cf31e
+---
+ console/libgnt/gnttree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/console/libgnt/gnttree.c b/console/libgnt/gnttree.c
+index d09a228..286052b 100644
+--- a/console/libgnt/gnttree.c
++++ b/console/libgnt/gnttree.c
+@@ -835,7 +835,7 @@ gnt_tree_init(GTypeInstance *instance, gpointer class)
+ 	tree->show_separator = TRUE;
+ 	GNT_WIDGET_SET_FLAGS(widget, GNT_WIDGET_GROW_X | GNT_WIDGET_GROW_Y);
+ 	widget->priv.minw = 4;
+-	widget->priv.minh = 4;
++	widget->priv.minh = 1;
+ 	GNTDEBUG;
+ }
+ 
+-- 
+1.7.10.4
+

@@ -1,0 +1,27 @@
+From 611447badd3b03cea55d410f5af3fb0959173b78 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Mon, 6 Aug 2007 01:46:07 +0000
+Subject: [PATCH] fix typo-leak
+
+--HG--
+extra : convert_revision : 128e100bae27b44dc77c5db5be0151b0fceaea8f
+---
+ finch/libgnt/gnttree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/finch/libgnt/gnttree.c b/finch/libgnt/gnttree.c
+index ff2bbe1..7affcb5 100644
+--- a/finch/libgnt/gnttree.c
++++ b/finch/libgnt/gnttree.c
+@@ -1094,7 +1094,7 @@ static void
+ free_tree_col(gpointer data)
+ {
+ 	GntTreeCol *col = data;
+-	if (col->isbinary)
++	if (!col->isbinary)
+ 		g_free(col->text);
+ 	g_free(col);
+ }
+-- 
+1.7.10.4
+

@@ -1,0 +1,31 @@
+From 7410edf76c100dcd6b80e1dc61bdee598c8162a4 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Thu, 19 Oct 2006 05:56:00 +0000
+Subject: [PATCH] [gaim-migrate @ 17545] Patch #1580124 from Richard Nelson
+ (wabz): There's no need to update a contact if it doesn't
+ have any child.
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : eee5f671ff62abd237ef54feae925f802530c6f0
+---
+ libgaim/blist.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libgaim/blist.c b/libgaim/blist.c
+index 63bea8f..c288755 100644
+--- a/libgaim/blist.c
++++ b/libgaim/blist.c
+@@ -1808,7 +1808,7 @@ void gaim_blist_remove_buddy(GaimBuddy *buddy)
+ 	gaim_blist_schedule_save();
+ 
+ 	/* Re-sort the contact */
+-	if (contact->priority == buddy) {
++	if (cnode->child && contact->priority == buddy) {
+ 		gaim_contact_invalidate_priority_buddy(contact);
+ 		if (ops && ops->update)
+ 			ops->update(gaimbuddylist, cnode);
+-- 
+1.7.10.4
+

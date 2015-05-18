@@ -1,0 +1,28 @@
+From 6dea177274925c8375072d129393735a68b2527e Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Tue, 7 Aug 2007 09:47:39 +0000
+Subject: [PATCH] g_set_application_name requires glib 2.2 for finch
+
+--HG--
+extra : convert_revision : bbcb8341b26dc1c43b844d99930c771cf6e64246
+---
+ finch/finch.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/finch/finch.c b/finch/finch.c
+index beaca0b..66eb886 100644
+--- a/finch/finch.c
++++ b/finch/finch.c
+@@ -401,7 +401,9 @@ int main(int argc, char **argv)
+ 	signal(SIGPIPE, SIG_IGN);
+ 
+ 	g_set_prgname("Finch");
++#if GLIB_CHECK_VERSION(2,2,0)
+ 	g_set_application_name(_("Finch"));
++#endif
+ 
+ 	/* Initialize the libpurple stuff */
+ 	if (!init_libpurple(argc, argv))
+-- 
+1.7.10.4
+

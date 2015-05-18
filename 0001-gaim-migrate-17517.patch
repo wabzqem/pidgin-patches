@@ -1,0 +1,51 @@
+From 497beb17f3fd706ec33ab7b24e440a71ab81af7b Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Wed, 18 Oct 2006 04:39:59 +0000
+Subject: [PATCH] [gaim-migrate @ 17517] Patch from Richard Nelson (wabz).
+ This is not necessary right now, but it's probably  going
+ to be necessary for workspaces (wabz is doing a WM for
+ that).
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : aa10ef269e131194e96a0a1023d85b1992dfd2c2
+---
+ console/libgnt/gntmain.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/console/libgnt/gntmain.c b/console/libgnt/gntmain.c
+index 8485e0e..bb1cc3f 100644
+--- a/console/libgnt/gntmain.c
++++ b/console/libgnt/gntmain.c
+@@ -271,8 +271,7 @@ draw_taskbar(gboolean reposition)
+ 			GNT_WIDGET_UNSET_FLAGS(w, GNT_WIDGET_URGENT);
+ 			if (wm.window_update) {
+ 				GntNode *node = g_hash_table_lookup(nodes, w);
+-				if (node)
+-					wm.window_update(node->panel, w);
++				wm.window_update(node ? node->panel : NULL, w);
+ 			}
+ 		} else if (GNT_WIDGET_IS_FLAG_SET(w, GNT_WIDGET_URGENT)) {
+ 			/* This is a window with the URGENT hint set */
+@@ -1318,7 +1317,7 @@ void gnt_widget_set_urgent(GntWidget *widget)
+ 
+ 	if (wm.window_update) {
+ 		GntNode *node = g_hash_table_lookup(nodes, widget);
+-		wm.window_update(node->panel, widget);
++		wm.window_update(node ? node->panel : NULL, widget);
+ 	}
+ 
+ 	draw_taskbar(FALSE);
+@@ -1382,7 +1381,7 @@ void gnt_screen_rename_widget(GntWidget *widget, const char *text)
+ 
+ 	if (wm.window_update) {
+ 		GntNode *node = g_hash_table_lookup(nodes, widget);
+-		wm.window_update(node->panel, widget);
++		wm.window_update(node ? node->panel : NULL, widget);
+ 	}
+ 
+ 	draw_taskbar(FALSE);
+-- 
+1.7.10.4
+

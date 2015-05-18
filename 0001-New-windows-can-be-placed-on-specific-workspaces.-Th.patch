@@ -1,0 +1,208 @@
+From 61c4cc42bdc9512feeaf021afd784701cf5e1227 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sun, 29 Apr 2007 00:37:28 +0000
+Subject: [PATCH] New windows can be placed on specific workspaces. They can
+ be specified by the window name (e.g. conversation-window),
+ or a substring in the window title. Title takes precedence.
+ This changes the ~/.gntrc config for workspaces to the
+ following format:
+
+[Workspace-1]
+name = blist
+window-names = buddylist;debug-window
+
+[Workspace-2]
+name = im
+window-names = conversation-window
+window-titles = Preferences
+
+[Workspace-3]
+name = chats
+window-titles = IRC;conference
+
+--HG--
+branch : finch.workspaces
+extra : convert_revision : c2b0e8d280a1803b8344154667645fadb3a080db
+---
+ finch/libgnt/gntstyle.c |   43 +++++++++++++++++++++++++++++-------------
+ finch/libgnt/gntwm.c    |   48 +++++++++++++++++++++++++++++++++++++++++------
+ finch/libgnt/gntwm.h    |    2 ++
+ 3 files changed, 74 insertions(+), 19 deletions(-)
+
+diff --git a/finch/libgnt/gntstyle.c b/finch/libgnt/gntstyle.c
+index 8f2a833..3cd4eaf 100644
+--- a/finch/libgnt/gntstyle.c
++++ b/finch/libgnt/gntstyle.c
+@@ -3,6 +3,7 @@
+ #include "gntws.h"
+ 
+ #include <ctype.h>
++#include <glib/gprintf.h>
+ #include <string.h>
+ 
+ #define MAX_WORKSPACES 99
+@@ -95,21 +96,37 @@ void gnt_style_read_workspaces(GntWM *wm)
+ #if GLIB_CHECK_VERSION(2,6,0)
+ 	int i;
+ 	gchar *name;
+-	if (!g_key_file_has_group(gkfile, "Workspaces"))
+-		return;
+-
+-	for (i = 1; i <= MAX_WORKSPACES; i++) {
+-		char *key = calloc(8, 1);
+-		sprintf(key, "name-%d", i);
+-		name = g_key_file_get_string(gkfile, "Workspaces", key, NULL);
+-		if (name) {
+-			GntWS *ws = g_object_new(GNT_TYPE_WS, NULL);
+-			gnt_ws_set_name(ws, name);
+-			gnt_wm_add_workspace(wm, ws);
+-			g_free(name);
+-		} else {
++	gsize c;
++
++	for (i = 1; i < MAX_WORKSPACES; ++i) {
++		int j;
++		GntWS *ws;
++		gchar **titles;
++		char *group = calloc(12, 1);
++		g_sprintf(group, "Workspace-%d", i);
++		name = g_key_file_get_value(gkfile, group, "name", NULL);
++		if (!name)
+ 			return;
++
++		ws = g_object_new(GNT_TYPE_WS, NULL);
++		gnt_ws_set_name(ws, name);
++		gnt_wm_add_workspace(wm, ws);
++		g_free(name);
++
++		titles = g_key_file_get_string_list(gkfile, group, "window-names", &c, NULL);
++		if (titles) {
++			for (j = 0; j < c; ++j)
++				g_hash_table_replace(wm->name_places, g_strdup(titles[j]), ws);
++			g_strfreev(titles);
++		}
++
++		titles = g_key_file_get_string_list(gkfile, group, "window-titles", &c, NULL);
++		if (titles) {
++			for (j = 0; j < c; ++j)
++				g_hash_table_replace(wm->title_places, g_strdup(titles[j]), ws);
++			g_strfreev(titles);
+ 		}
++		g_free(group);
+ 	}
+ #endif
+ }
+diff --git a/finch/libgnt/gntwm.c b/finch/libgnt/gntwm.c
+index 621aded..b3c81ea 100644
+--- a/finch/libgnt/gntwm.c
++++ b/finch/libgnt/gntwm.c
+@@ -6,6 +6,7 @@
+ #include "config.h"
+ 
+ #include <ctype.h>
++#include <glib/gprintf.h>
+ #include <gmodule.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -243,6 +244,8 @@ gnt_wm_init(GTypeInstance *instance, gpointer class)
+ {
+ 	GntWM *wm = GNT_WM(instance);
+ 	wm->workspaces = NULL;
++	wm->name_places = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
++	wm->title_places = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+ 	gnt_style_read_workspaces(wm);
+ 	if (wm->workspaces == NULL) {
+ 		wm->cws = g_object_new(GNT_TYPE_WS, NULL);
+@@ -1309,6 +1312,29 @@ update_window_in_list(GntWM *wm, GntWidget *wid)
+ 	gnt_tree_set_row_flags(GNT_TREE(wm->windows->tree), wid, flag);
+ }
+ 
++static gboolean
++match_title(gpointer title, gpointer n, gpointer wid_title)
++{
++	/* maybe check for regex.h? */
++	if (g_strrstr((gchar *)wid_title, (gchar *)title))
++		return TRUE;
++	return FALSE;
++}
++
++static GntWS *
++new_widget_find_workspace(GntWM *wm, GntWidget *widget, gchar *wid_title)
++{
++	GntWS *ret;
++	const gchar *name;
++	ret = g_hash_table_find(wm->title_places, match_title, wid_title);
++	if (ret)
++		return ret;
++	name = gnt_widget_get_name(widget);
++	if (name)
++		ret = g_hash_table_lookup(wm->name_places, name);
++	return ret ? ret : wm->cws;
++}
++
+ static void
+ gnt_wm_new_window_real(GntWM *wm, GntWidget *widget)
+ {
+@@ -1363,19 +1389,25 @@ gnt_wm_new_window_real(GntWM *wm, GntWidget *widget)
+ 	set_panel_userptr(node->panel, node);
+ 
+ 	if (!transient) {
++		GntWS *ws = wm->cws;
+ 		if (node->me != wm->_list.window) {
+ 			GntWidget *w = NULL;
+ 
+-			if (wm->cws->ordered)
+-				w = wm->cws->ordered->data;
++			if (GNT_IS_BOX(widget)) {
++				char *title = GNT_BOX(widget)->title;
++				ws = new_widget_find_workspace(wm, widget, title);
++			}
++
++			if (ws->ordered)
++				w = ws->ordered->data;
+ 
+-			node->ws = wm->cws;
+-			wm->cws->list = g_list_append(wm->cws->list, widget);
++			node->ws = ws;
++			ws->list = g_list_append(ws->list, widget);
+ 
+ 			if (wm->event_stack)
+-				wm->cws->ordered = g_list_prepend(wm->cws->ordered, widget);
++				ws->ordered = g_list_prepend(ws->ordered, widget);
+ 			else
+-				wm->cws->ordered = g_list_append(wm->cws->ordered, widget);
++				ws->ordered = g_list_append(ws->ordered, widget);
+ 
+ 			gnt_widget_set_focus(widget, TRUE);
+ 			if (w)
+@@ -1383,10 +1415,14 @@ gnt_wm_new_window_real(GntWM *wm, GntWidget *widget)
+ 		}
+ 
+ 		if (wm->event_stack || node->me == wm->_list.window) {
++			if (wm->cws != ws)
++				gnt_wm_switch_workspace(wm, g_list_index(wm->workspaces, ws));
+ 			gnt_wm_raise_window(wm, node->me);
+ 		} else {
+ 			bottom_panel(node->panel);     /* New windows should not grab focus */
+ 			gnt_widget_set_urgent(node->me);
++			if (wm->cws != ws)
++				gnt_ws_widget_hide(widget, wm->nodes);
+ 		}
+ 	}
+ }
+diff --git a/finch/libgnt/gntwm.h b/finch/libgnt/gntwm.h
+index b3198e8..0d0bcbb 100644
+--- a/finch/libgnt/gntwm.h
++++ b/finch/libgnt/gntwm.h
+@@ -68,6 +68,8 @@ struct _GntWM
+ 		*actions;         /* Action-list window */
+ 
+ 	GHashTable *nodes;    /* GntWidget -> GntNode */
++	GHashTable *name_places;    /* window name -> ws*/
++	GHashTable *title_places;    /* window title -> ws */
+ 
+ 	GList *acts;          /* List of actions */
+ 
+-- 
+1.7.10.4
+

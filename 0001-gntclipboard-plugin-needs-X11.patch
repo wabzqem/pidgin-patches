@@ -1,0 +1,30 @@
+From 05201dc297a4a34148096928bd451e766ef76be9 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Tue, 10 Apr 2007 12:26:58 +0000
+Subject: [PATCH] gntclipboard plugin needs X11
+
+--HG--
+extra : convert_revision : 7fceecf6637c9d4f273bb0ce607b64449a0a47a4
+---
+ finch/plugins/Makefile.am |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/finch/plugins/Makefile.am b/finch/plugins/Makefile.am
+index 48b2ea1..208a58e 100644
+--- a/finch/plugins/Makefile.am
++++ b/finch/plugins/Makefile.am
+@@ -18,9 +18,10 @@ gntgf_la_SOURCES      = gntgf.c
+ gnthistory_la_SOURCES = gnthistory.c
+ gntlastlog_la_SOURCES = lastlog.c
+ 
++gntclipboard_la_CFLAGS = $(X11_CFLAGS)
+ gntgf_la_CFLAGS = $(X11_CFLAGS)
+ 
+-gntclipboard_la_LIBADD = $(GLIB_LIBS)
++gntclipboard_la_LIBADD = $(GLIB_LIBS) $(X11_LIBS)
+ gntgf_la_LIBADD       = $(GLIB_LIBS) $(X11_LIBS) $(top_builddir)/finch/libgnt/libgnt.la
+ gnthistory_la_LIBADD  = $(GLIB_LIBS)
+ gntlastlog_la_LIBADD  = $(GLIB_LIBS)
+-- 
+1.7.10.4
+

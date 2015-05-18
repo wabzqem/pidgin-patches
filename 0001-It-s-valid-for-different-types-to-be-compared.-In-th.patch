@@ -1,0 +1,53 @@
+From 125f48dc0c821a9981961cdeabaafa0ee35f2a0b Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Fri, 25 May 2007 02:06:06 +0000
+Subject: [PATCH] It's valid for different types to be compared. In that case,
+ use existing positions.
+
+--HG--
+extra : convert_revision : 98adfa78dbac6ceee05caeb096498a3fecf7fd55
+---
+ finch/gntblist.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/finch/gntblist.c b/finch/gntblist.c
+index af33576..dee056f 100644
+--- a/finch/gntblist.c
++++ b/finch/gntblist.c
+@@ -1873,9 +1873,10 @@ blist_node_compare_text(PurpleBlistNode *n1, PurpleBlistNode *n2)
+ 	const char *s1, *s2;
+ 	char *us1, *us2;
+ 	int ret;
+-	
+-	g_return_val_if_fail(n1->type == n2->type, -1);
+-	
++
++	if (n1->type != n2->type)
++		return blist_node_compare_position(n1, n2);
++
+ 	switch (n1->type)
+ 	{
+ 		case PURPLE_BLIST_CHAT_NODE:
+@@ -1908,7 +1909,8 @@ blist_node_compare_status(PurpleBlistNode *n1, PurpleBlistNode *n2)
+ {
+ 	int ret;
+ 
+-	g_return_val_if_fail(n1->type == n2->type, -1);
++	if (n1->type != n2->type)
++		return blist_node_compare_position(n1, n2);
+ 
+ 	switch (n1->type) {
+ 		case PURPLE_BLIST_CONTACT_NODE:
+@@ -1952,7 +1954,8 @@ blist_node_compare_log(PurpleBlistNode *n1, PurpleBlistNode *n2)
+ 	int ret;
+ 	PurpleBuddy *b1, *b2;
+ 
+-	g_return_val_if_fail(n1->type == n2->type, -1);
++	if (n1->type != n2->type)
++		return blist_node_compare_position(n1, n2);
+ 
+ 	switch (n1->type) {
+ 		case PURPLE_BLIST_BUDDY_NODE:
+-- 
+1.7.10.4
+

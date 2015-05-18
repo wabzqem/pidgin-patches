@@ -1,0 +1,61 @@
+From ff3f853dfc301e1af49c9480f82bc134afd6ef9d Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sun, 29 Oct 2006 07:09:49 +0000
+Subject: [PATCH] [gaim-migrate @ 17617] Patch from Richard 'wabz' Nelson to
+ fix a crash during startup if show-offline is enabled. I
+ also noticed another crash during shutdown. Fix that one
+ too.
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : d6f3756aef4d90c0ed7d4cb35c8a0c536e42b729
+---
+ console/gntblist.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/console/gntblist.c b/console/gntblist.c
+index 1e43dc2..ddf1e84 100644
+--- a/console/gntblist.c
++++ b/console/gntblist.c
+@@ -158,6 +158,13 @@ remove_tooltip(GGBlist *ggblist)
+ 	ggblist->tnode = NULL;
+ }
+ 
++static gboolean
++_draw_tooltip(gpointer data)
++{
++	draw_tooltip(data);
++	return FALSE;
++}
++
+ static void
+ node_remove(GaimBuddyList *list, GaimBlistNode *node)
+ {
+@@ -180,7 +187,13 @@ node_remove(GaimBuddyList *list, GaimBlistNode *node)
+ 				group->currentsize < 1)
+ 			node_remove(list, node->parent);
+ 	}
+-	draw_tooltip(ggblist);
++
++	/* When an account has signed off, it removes one buddy at a time.
++	 * Drawing the tooltip after removing each buddy is expensive. On
++	 * top of that, if the selected buddy belongs to the disconnected
++	 * account, then retreiving the tooltip for that causes crash. So
++	 * let's make sure we wait for all the buddies to be removed first.*/
++	g_timeout_add(0, _draw_tooltip, ggblist);
+ }
+ 
+ static void
+@@ -1450,7 +1463,7 @@ static void
+ redraw_blist(const char *name, GaimPrefType type, gconstpointer val, gpointer data)
+ {
+ 	GaimBlistNode *node, *sel;
+-	if (ggblist == NULL)
++	if (ggblist == NULL || ggblist->window == NULL)
+ 		return;
+ 
+ 	sel = gnt_tree_get_selection_data(GNT_TREE(ggblist->tree));
+-- 
+1.7.10.4
+

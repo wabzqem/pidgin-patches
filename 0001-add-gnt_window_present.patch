@@ -1,0 +1,86 @@
+From 00f03093e85a982f64c6b09ce9853c5d2711537e Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Fri, 8 Jun 2007 12:41:30 +0000
+Subject: [PATCH] add gnt_window_present
+
+--HG--
+branch : release-2.1.0
+extra : convert_revision : d928b09f785f0dc6187face03b84957ad5a18e02
+---
+ finch/libgnt/gnt.h     |    1 +
+ finch/libgnt/gntmain.c |    4 ++++
+ finch/libgnt/gntwm.c   |   10 ++++------
+ 3 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/finch/libgnt/gnt.h b/finch/libgnt/gnt.h
+index 9c71af6..16b4f02 100644
+--- a/finch/libgnt/gnt.h
++++ b/finch/libgnt/gnt.h
+@@ -43,6 +43,7 @@ void gnt_main(void);
+  */
+ gboolean gnt_ascii_only(void);
+ 
++void gnt_window_present(GntWidget *window);
+ /**
+  * 
+  * @param widget
+diff --git a/finch/libgnt/gntmain.c b/finch/libgnt/gntmain.c
+index c5ab5f5..bc49ecb 100644
+--- a/finch/libgnt/gntmain.c
++++ b/finch/libgnt/gntmain.c
+@@ -484,6 +484,10 @@ void gnt_main()
+  * Stuff for 'window management' *
+  *********************************/
+ 
++void gnt_window_present(GntWidget *window) {
++	gnt_wm_raise_window(wm, window);
++}
++
+ void gnt_screen_occupy(GntWidget *widget)
+ {
+ 	gnt_wm_new_window(wm, widget);
+diff --git a/finch/libgnt/gntwm.c b/finch/libgnt/gntwm.c
+index 67e1034..81ab6c6 100644
+--- a/finch/libgnt/gntwm.c
++++ b/finch/libgnt/gntwm.c
+@@ -186,7 +186,7 @@ update_act_msg()
+ 		return;
+ 	for (iter = act; iter; iter = iter->next) {
+ 		GntWS *ws = iter->data;
+-		g_string_sprintfa(text, "%s, ", gnt_ws_get_name(ws));
++		g_string_append_printf(text, "%s, ", gnt_ws_get_name(ws));
+ 	}
+ 	g_string_erase(text, text->len - 2, 2);
+ 	message = gnt_vbox_new(FALSE);
+@@ -562,9 +562,6 @@ window_list_activate(GntTree *tree, GntWM *wm)
+ 	if (GNT_IS_WS(sel)) {
+ 		gnt_wm_switch_workspace(wm, g_list_index(wm->workspaces, sel));
+ 	} else {
+-		GntNode *node = g_hash_table_lookup(wm->nodes, sel);
+-		if (node && node->ws != wm->cws)
+-			gnt_wm_switch_workspace(wm, g_list_index(wm->workspaces, node->ws));
+ 		gnt_wm_raise_window(wm, GNT_WIDGET(sel));
+ 	}
+ }
+@@ -1550,8 +1547,6 @@ gnt_wm_new_window_real(GntWM *wm, GntWidget *widget)
+ 		}
+ 
+ 		if (wm->event_stack || node->me == wm->_list.window) {
+-			if (wm->cws != ws)
+-				gnt_wm_switch_workspace(wm, g_list_index(wm->workspaces, ws));
+ 			gnt_wm_raise_window(wm, node->me);
+ 		} else {
+ 			bottom_panel(node->panel);     /* New windows should not grab focus */
+@@ -1928,6 +1923,9 @@ gboolean gnt_wm_process_click(GntWM *wm, GntMouseEvent event, int x, int y, GntW
+ 
+ void gnt_wm_raise_window(GntWM *wm, GntWidget *widget)
+ {
++	GntWS *ws = gnt_wm_widget_find_workspace(wm, widget);
++	if (wm->cws != ws)
++		gnt_wm_switch_workspace(wm, g_list_index(wm->workspaces, ws));
+ 	g_signal_emit(wm, signals[SIG_GIVE_FOCUS], 0, widget);
+ }
+ 
+-- 
+1.7.10.4
+

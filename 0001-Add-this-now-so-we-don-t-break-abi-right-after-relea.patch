@@ -1,0 +1,26 @@
+From 1ae6fef08c1529b85364be9c3dd829c01aa4b947 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sun, 15 Apr 2007 08:31:16 +0000
+Subject: [PATCH] Add this now so we don't break abi right after release
+
+--HG--
+extra : convert_revision : 25281793a1ebc19a8b5ee0820391ac23e9509a97
+---
+ finch/gntconv.h |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/finch/gntconv.h b/finch/gntconv.h
+index 78f63a7..a80e51b 100644
+--- a/finch/gntconv.h
++++ b/finch/gntconv.h
+@@ -47,6 +47,7 @@ struct _FinchConv
+ 	GntWidget *window;        /* the container */
+ 	GntWidget *entry;         /* entry */
+ 	GntWidget *tv;            /* text-view */
++	GntWidget *menu;          /* future use */
+ 
+ 	union
+ 	{
+-- 
+1.7.10.4
+

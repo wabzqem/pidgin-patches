@@ -1,0 +1,62 @@
+From 9959387f62c3b128f15dd44973d6f9eff87864aa Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Wed, 30 Aug 2006 05:07:43 +0000
+Subject: [PATCH] [gaim-migrate @ 17085] Parts of Richard Nelson (wabz)'s
+ patch: Emit the selection-changed signal when you
+ wheel-scroll. Show the idle-time only when it has an
+ appropriate idle-time.
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : 5f034c6e75c8c4b63922ae325ab1727a086bb297
+---
+ console/gntblist.c       |    8 +++++---
+ console/libgnt/gnttree.c |    5 +++++
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/console/gntblist.c b/console/gntblist.c
+index 9ac9b4a..daa3131 100644
+--- a/console/gntblist.c
++++ b/console/gntblist.c
+@@ -977,9 +977,11 @@ draw_tooltip(GGBlist *ggblist)
+ 			if (gaim_presence_is_idle(pre))
+ 			{
+ 				time_t idle = gaim_presence_get_idle_time(pre);
+-				char *st = gaim_str_seconds_to_string(time(NULL) - idle);
+-				g_string_append_printf(str, _("\nIdle: %s"), st);
+-				g_free(st);
++				if (idle > 0) {
++					char *st = gaim_str_seconds_to_string(time(NULL) - idle);
++					g_string_append_printf(str, _("\nIdle: %s"), st);
++					g_free(st);
++				}
+ 			}
+ 		}
+ 
+diff --git a/console/libgnt/gnttree.c b/console/libgnt/gnttree.c
+index bb8f9b4..0d86ef1 100644
+--- a/console/libgnt/gnttree.c
++++ b/console/libgnt/gnttree.c
+@@ -614,6 +614,8 @@ gnt_tree_destroy(GntWidget *widget)
+ static gboolean
+ gnt_tree_clicked(GntWidget *widget, GntMouseEvent event, int x, int y)
+ {
++	GntTree *tree = GNT_TREE(widget);
++	GntTreeRow *old = tree->current;
+ 	if (event == GNT_MOUSE_SCROLL_UP) {
+ 		action_up(GNT_TREE(widget));
+ 	} else if (event == GNT_MOUSE_SCROLL_DOWN) {
+@@ -645,6 +647,9 @@ gnt_tree_clicked(GntWidget *widget, GntMouseEvent event, int x, int y)
+ 	} else {
+ 		return FALSE;
+ 	}
++	if (old != tree->current) {
++		tree_selection_changed(tree, old, tree->current);
++	}
+ 	return TRUE;
+ }
+ 
+-- 
+1.7.10.4
+

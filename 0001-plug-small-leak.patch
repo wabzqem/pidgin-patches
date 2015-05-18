@@ -1,0 +1,26 @@
+From 15a6a0de31b493512cc07320dcfb55f46432322a Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Fri, 17 Aug 2007 00:33:53 +0000
+Subject: [PATCH] plug small leak
+
+--HG--
+extra : convert_revision : 8c7ff33a8a8e1839194829073ff671638fd0b1be
+---
+ finch/libgnt/gntbutton.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/finch/libgnt/gntbutton.c b/finch/libgnt/gntbutton.c
+index 70248af..0985669 100644
+--- a/finch/libgnt/gntbutton.c
++++ b/finch/libgnt/gntbutton.c
+@@ -111,6 +111,7 @@ gnt_button_class_init(GntWidgetClass *klass)
+ 
+ 	style = gnt_style_get_from_name(NULL, "small-button");
+ 	small_button = gnt_style_parse_bool(style);
++	g_free(style);
+ 	GNTDEBUG;
+ }
+ 
+-- 
+1.7.10.4
+

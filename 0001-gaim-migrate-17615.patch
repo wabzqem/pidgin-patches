@@ -1,0 +1,126 @@
+From 8b7d6282bd1bd819f70a0f8a98349f3eb0b525d3 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sun, 29 Oct 2006 01:32:04 +0000
+Subject: [PATCH] [gaim-migrate @ 17615] Patch from Richard Nelson (wabz) to
+ fix the blist-width, and do ellipsization in the trees.
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : 00e906902a49967b059289c24f53a579114ad9a8
+---
+ console/gntblist.c           |    9 +++++++--
+ console/libgnt/gntbox.c      |    3 +++
+ console/libgnt/gnttree.c     |   17 ++++++++++++-----
+ console/plugins/gnthistory.c |    1 -
+ 4 files changed, 22 insertions(+), 8 deletions(-)
+
+diff --git a/console/gntblist.c b/console/gntblist.c
+index 8db0589..a50bb5b 100644
+--- a/console/gntblist.c
++++ b/console/gntblist.c
+@@ -1315,10 +1315,13 @@ remove_peripherals(GGBlist *ggblist)
+ }
+ 
+ static void
+-size_changed_cb(GntWidget *w, int width, int height)
++size_changed_cb(GntWidget *w, int wi, int h)
+ {
++	int width, height;
++	gnt_widget_get_size(w, &width, &height);
+ 	gaim_prefs_set_int(PREF_ROOT "/size/width", width);
+ 	gaim_prefs_set_int(PREF_ROOT "/size/height", height);
++	gnt_tree_set_col_width(GNT_TREE(ggblist->tree), 0, width - 1);
+ }
+ 
+ static void
+@@ -1864,12 +1867,14 @@ void gg_blist_show()
+ 	ggblist->tree = gnt_tree_new();
+ 
+ 	GNT_WIDGET_SET_FLAGS(ggblist->tree, GNT_WIDGET_NO_BORDER);
+-	gnt_tree_set_col_width(GNT_TREE(ggblist->tree), 0, 25);
+ 	gnt_widget_set_size(ggblist->tree, gaim_prefs_get_int(PREF_ROOT "/size/width"),
+ 			gaim_prefs_get_int(PREF_ROOT "/size/height"));
+ 	gnt_widget_set_position(ggblist->window, gaim_prefs_get_int(PREF_ROOT "/position/x"),
+ 			gaim_prefs_get_int(PREF_ROOT "/position/y"));
+ 
++	gnt_tree_set_col_width(GNT_TREE(ggblist->tree), 0,
++			gaim_prefs_get_int(PREF_ROOT "/size/width") - 1);
++
+ 	gnt_box_add_widget(GNT_BOX(ggblist->window), ggblist->tree);
+ 
+ 	ggblist->status = gnt_combo_box_new();
+diff --git a/console/libgnt/gntbox.c b/console/libgnt/gntbox.c
+index 64b2a6e..7faf6af 100644
+--- a/console/libgnt/gntbox.c
++++ b/console/libgnt/gntbox.c
+@@ -704,6 +704,9 @@ void gnt_box_readjust(GntBox *box)
+ 	GntWidget *wid;
+ 	int width, height;
+ 
++	if (GNT_WIDGET(box)->parent != NULL)
++		return;
++
+ 	for (iter = box->list; iter; iter = iter->next)
+ 	{
+ 		GntWidget *w = iter->data;
+diff --git a/console/libgnt/gnttree.c b/console/libgnt/gnttree.c
+index 89f0ed2..8ccc68f 100644
+--- a/console/libgnt/gnttree.c
++++ b/console/libgnt/gnttree.c
+@@ -200,6 +200,7 @@ update_row_text(GntTree *tree, GntTreeRow *row)
+ 		const char *text;
+ 		int len = gnt_util_onscreen_width(col->text, NULL);
+ 		int fl = 0;
++		gboolean cut = FALSE;
+ 
+ 		if (i == 0)
+ 		{
+@@ -231,13 +232,20 @@ update_row_text(GntTree *tree, GntTreeRow *row)
+ 		else
+ 			g_string_append_c(string, '|');
+ 
+-		if (len > tree->columns[i].width)
+-		{
+-			len = tree->columns[i].width;
++		if (len > tree->columns[i].width) {
++			len = tree->columns[i].width - 1;
++			cut = TRUE;
+ 		}
+-
+ 		text = gnt_util_onscreen_width_to_pointer(col->text, len - fl, NULL);
+ 		string = g_string_append_len(string, col->text, text - col->text);
++		if (cut) { /* ellipsis */
++			if (gnt_ascii_only())
++				g_string_append_c(string, '~');
++			else
++				string = g_string_append(string, "\342\200\246");
++			len++;
++		}
++
+ 		if (len < tree->columns[i].width && iter->next)
+ 			g_string_append_printf(string, "%*s", tree->columns[i].width - len, "");
+ 	}
+@@ -339,7 +347,6 @@ redraw_tree(GntTree *tree)
+ 
+ 		if ((wr = gnt_util_onscreen_width(str, NULL)) > scrcol)
+ 		{
+-			/* XXX: ellipsize */
+ 			char *s = (char*)gnt_util_onscreen_width_to_pointer(str, scrcol, &wr);
+ 			*s = '\0';
+ 		}
+diff --git a/console/plugins/gnthistory.c b/console/plugins/gnthistory.c
+index 6df2ef7..353e5c0 100644
+--- a/console/plugins/gnthistory.c
++++ b/console/plugins/gnthistory.c
+@@ -21,7 +21,6 @@
+ /* Ripped from gtk/plugins/history.c */
+ 
+ #include "internal.h"
+-#include "gntgaim.h"
+ 
+ #include "conversation.h"
+ #include "debug.h"
+-- 
+1.7.10.4
+

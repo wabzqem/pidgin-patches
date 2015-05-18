@@ -1,0 +1,30 @@
+From d2ae009a54471c7f382cdcf08f13509360eba1d8 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Tue, 10 Apr 2007 09:32:52 +0000
+Subject: [PATCH] Only ascii keys can be bound, fixes a crash when inputting
+ non-ascii chars
+
+--HG--
+extra : convert_revision : be6a420ff7a4679cc705c9323316d517bcdb23a8
+---
+ finch/libgnt/gntkeys.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/finch/libgnt/gntkeys.c b/finch/libgnt/gntkeys.c
+index 0bf229b..59527af 100644
+--- a/finch/libgnt/gntkeys.c
++++ b/finch/libgnt/gntkeys.c
+@@ -230,7 +230,9 @@ int gnt_keys_find_combination(const char *path)
+ 
+ 	root.flags &= ~IS_END;
+ 	while (*path && n->next[*path] && !(n->flags & IS_END)) {
+-		if (g_utf8_find_next_char(path, NULL) - path > 1)
++		if (!g_ascii_isspace(*path) &&
++				!g_ascii_iscntrl(*path) &&
++				!g_ascii_isgraph(*path))
+ 			return 0;
+ 		n = n->next[*path++];
+ 		depth++;
+-- 
+1.7.10.4
+

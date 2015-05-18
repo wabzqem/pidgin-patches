@@ -1,0 +1,29 @@
+From 2a6ad681db16f37430fb6c0d6357fae0158cdd55 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Wed, 11 Jul 2007 23:17:22 +0000
+Subject: [PATCH] Chats aren't shown if their account is offline, so a group
+ of offline chats shouldn't be either
+
+--HG--
+extra : convert_revision : 0dbea752db9d6bd68deeb512f19249224ca5d6fe
+---
+ finch/gntblist.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/finch/gntblist.c b/finch/gntblist.c
+index aff77db..31a3d42 100644
+--- a/finch/gntblist.c
++++ b/finch/gntblist.c
+@@ -139,7 +139,8 @@ is_group_online(PurpleGroup *group)
+ {
+ 	PurpleBlistNode *node;
+ 	for (node = ((PurpleBlistNode*)group)->child; node; node = node->next) {
+-		if (PURPLE_BLIST_NODE_IS_CHAT(node))
++		if (PURPLE_BLIST_NODE_IS_CHAT(node) &&
++				purple_account_is_connected(((PurpleChat *)node)->account))
+ 			return TRUE;
+ 		else if (is_contact_online((PurpleContact*)node))
+ 			return TRUE;
+-- 
+1.7.10.4
+

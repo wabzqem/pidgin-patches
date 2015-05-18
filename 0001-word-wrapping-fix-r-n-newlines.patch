@@ -1,0 +1,71 @@
+From ec85136b103f3f942da44a37e421e3222cee0d26 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Mon, 9 Apr 2007 10:03:48 +0000
+Subject: [PATCH] word wrapping, fix \r\n newlines
+
+--HG--
+extra : convert_revision : 76ae821b860d7d88ecac474faf4c7d8784b674b9
+---
+ finch/libgnt/gnttextview.c |   23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
+
+diff --git a/finch/libgnt/gnttextview.c b/finch/libgnt/gnttextview.c
+index 8740b61..31f0ef1 100644
+--- a/finch/libgnt/gnttextview.c
++++ b/finch/libgnt/gnttextview.c
+@@ -483,9 +483,12 @@ void gnt_text_view_append_text_with_tag(GntTextView *view, const char *text,
+ 	start = end = view->string->str + len;
+ 
+ 	while (*start) {
++		GntTextLine *oldl;
+ 		GntTextSegment *seg = NULL;
+ 
+ 		if (*end == '\n' || *end == '\r') {
++			if (!strncmp(end, "\r\n", 2))
++				end++;
+ 			end++;
+ 			start = end;
+ 			gnt_text_view_next_line(view);
+@@ -501,8 +504,8 @@ void gnt_text_view_append_text_with_tag(GntTextView *view, const char *text,
+ 			view->list = g_list_prepend(view->list, line);
+ 		}
+ 
+-		if ((end = strchr(start, '\n')) != NULL ||
+-			(end = strchr(start, '\r')) != NULL) {
++		if ((end = strchr(start, '\r')) != NULL ||
++			(end = strchr(start, '\n')) != NULL) {
+ 			len = gnt_util_onscreen_width(start, end - 1);
+ 			if (len >= widget->priv.width - line->length - 1) {
+ 				end = NULL;
+@@ -527,15 +530,25 @@ void gnt_text_view_append_text_with_tag(GntTextView *view, const char *text,
+ 			seg->flags = fl;
+ 			line->segments = g_list_append(line->segments, seg);
+ 		}
+-		seg->end = end - view->string->str;
+-		line->length += len;
+ 
+-		start = end;
++		oldl = line;
+ 		if (*end && *end != '\n' && *end != '\r') {
++			const char *tmp = end;
++			while (end && *end != '\n' && *end != '\r' && !g_ascii_isspace(*end)) {
++				end = g_utf8_find_prev_char(seg->start + view->string->str, end);
++			}
++			if (!end || !g_ascii_isspace(*end))
++				end = tmp;
++			else
++				end++; /* Remove the space */
++
+ 			line = g_new0(GntTextLine, 1);
+ 			line->soft = TRUE;
+ 			view->list = g_list_prepend(view->list, line);
+ 		}
++		seg->end = end - view->string->str;
++		oldl->length += len;
++		start = end;
+ 	}
+ 
+ 	view->list = list;
+-- 
+1.7.10.4
+

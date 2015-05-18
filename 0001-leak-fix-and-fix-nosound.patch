@@ -1,0 +1,35 @@
+From 05cbdbbfea58bd2dbe4aa4ba56d75943399a57d0 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Fri, 17 Aug 2007 00:33:02 +0000
+Subject: [PATCH] leak fix, and fix nosound
+
+--HG--
+extra : convert_revision : 4cf73f6beb003064dd98d860627653fd66e4a37c
+---
+ finch/gntsound.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/finch/gntsound.c b/finch/gntsound.c
+index 303a8e9..05896c9 100644
+--- a/finch/gntsound.c
++++ b/finch/gntsound.c
+@@ -446,7 +446,7 @@ finch_sound_play_file(const char *filename)
+ 
+ 	method = purple_prefs_get_string(make_pref("/method"));
+ 
+-	if (!strcmp(method, "none")) {
++	if (!strcmp(method, "nosound")) {
+ 		return;
+ 	} else if (!strcmp(method, "beep")) {
+ 		beep();
+@@ -747,6 +747,7 @@ release_pref_dialog(GntBindable *data, gpointer null)
+ 	}
+ 	if (pref_dialog->selector)
+ 		gnt_widget_destroy(pref_dialog->selector);
++	g_free(pref_dialog->original_profile);
+ 	g_free(pref_dialog);
+ 	pref_dialog = NULL;
+ }
+-- 
+1.7.10.4
+

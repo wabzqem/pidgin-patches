@@ -1,0 +1,30 @@
+From 83ea2996c7caa7a2da3878f7375291abc4b9667b Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Thu, 12 Oct 2006 03:30:25 +0000
+Subject: [PATCH] [gaim-migrate @ 17467] Yet another patch from Richard Nelson
+ (wabz). This makes the checkboxes in the debug window
+ vertically centered.
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : 7eadf5fd12e1ef590aa763d7794896cb194a39dd
+---
+ console/gntdebug.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/console/gntdebug.c b/console/gntdebug.c
+index ba5b149..d224205 100644
+--- a/console/gntdebug.c
++++ b/console/gntdebug.c
+@@ -211,6 +211,7 @@ void gg_debug_window_show()
+ 
+ 		box = gnt_hbox_new(FALSE);
+ 		gnt_box_set_alignment(GNT_BOX(box), GNT_ALIGN_MID);
++		gnt_box_set_fill(GNT_BOX(box), FALSE);
+ 
+ 		/* XXX: Setting the GROW_Y for the following widgets don't make sense. But right now
+ 		 * it's necessary to make the width of the debug window resizable ... like I said,
+-- 
+1.7.10.4
+

@@ -1,0 +1,33 @@
+From 5fa364223d20566a1b973967bd3c42df5d2e3748 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Thu, 26 Oct 2006 06:20:18 +0000
+Subject: [PATCH] [gaim-migrate @ 17587] SF Patch #1579670 from Richard Nelson
+ (wabz)
+
+"Choosing to show/hide empty groups does nothing. This
+ patch rectifies, hopefully in the correct way."
+
+committer: Richard Laager <rlaager@pidgin.im>
+
+--HG--
+extra : convert_revision : 30cba0f3d6a5ac6d829833b99f16f19be35498bf
+---
+ gtk/gtkblist.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/gtk/gtkblist.c b/gtk/gtkblist.c
+index 14363e2..6264f02 100644
+--- a/gtk/gtkblist.c
++++ b/gtk/gtkblist.c
+@@ -4191,6 +4191,8 @@ static void redo_buddy_list(GaimBuddyList *list, gboolean remove, gboolean reren
+ 			gaim_gtk_blist_update_buddy(list, node, rerender);
+ 		else if (GAIM_BLIST_NODE_IS_CHAT(node))
+ 			gaim_gtk_blist_update(list, node);
++		else if (GAIM_BLIST_NODE_IS_GROUP(node))
++			gaim_gtk_blist_update(list, node);
+ 		node = gaim_blist_node_next(node, FALSE);
+ 	}
+ 
+-- 
+1.7.10.4
+

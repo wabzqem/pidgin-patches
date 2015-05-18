@@ -1,0 +1,26 @@
+From 69ca7feb41990c370a4e65dd0c37a881bae2a7d5 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Mon, 6 Apr 2009 10:30:25 +0000
+Subject: [PATCH] Redraw the textview when a tag is changed
+
+--HG--
+extra : convert_revision : 0b3f847bd16080ce26f0a73e3db52c275af0fefc
+---
+ finch/libgnt/gnttextview.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/finch/libgnt/gnttextview.c b/finch/libgnt/gnttextview.c
+index 2c46e81..1a1354c 100644
+--- a/finch/libgnt/gnttextview.c
++++ b/finch/libgnt/gnttextview.c
+@@ -799,6 +799,7 @@ int gnt_text_view_tag_change(GntTextView *view, const char *name, const char *te
+ 				break;
+ 		}
+ 	}
++	gnt_widget_draw(GNT_WIDGET(view));
+ 	return count;
+ }
+ 
+-- 
+1.7.10.4
+

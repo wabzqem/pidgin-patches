@@ -1,0 +1,167 @@
+From d4ba4fdf5f55be897219df40e950d0804c88bc59 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 12 May 2007 23:58:11 +0000
+Subject: [PATCH] Let windows know when the workspace they are in is being
+ hidden/shown
+
+--HG--
+branch : finch.workspaces
+extra : convert_revision : a54e86b400cf8e4b692ae83a4e4976843855b1f6
+---
+ finch/gntblist.c         |    2 ++
+ finch/libgnt/gntmenu.c   |    5 ++++-
+ finch/libgnt/gnttree.c   |    2 +-
+ finch/libgnt/gntwindow.c |   38 +++++++++++++++++++++++++++++++++++++-
+ finch/libgnt/gntwindow.h |    3 +++
+ finch/libgnt/gntws.c     |    7 +++++--
+ 6 files changed, 52 insertions(+), 5 deletions(-)
+
+diff --git a/finch/gntblist.c b/finch/gntblist.c
+index 10b99de..e547aa5 100644
+--- a/finch/gntblist.c
++++ b/finch/gntblist.c
+@@ -2274,6 +2274,8 @@ blist_show(PurpleBuddyList *list)
+ 				ggblist, 0, G_CONNECT_AFTER | G_CONNECT_SWAPPED);
+ 	g_signal_connect_data(G_OBJECT(ggblist->tree), "lost-focus", G_CALLBACK(remove_peripherals),
+ 				ggblist, 0, G_CONNECT_AFTER | G_CONNECT_SWAPPED);
++	g_signal_connect_data(G_OBJECT(ggblist->window), "workspace-hidden", G_CALLBACK(remove_peripherals),
++				ggblist, 0, G_CONNECT_AFTER | G_CONNECT_SWAPPED);
+ 	g_signal_connect(G_OBJECT(ggblist->tree), "size_changed", G_CALLBACK(size_changed_cb), NULL);
+ 	g_signal_connect(G_OBJECT(ggblist->window), "position_set", G_CALLBACK(save_position_cb), NULL);
+ 	g_signal_connect(G_OBJECT(ggblist->window), "destroy", G_CALLBACK(reset_blist_window), NULL);
+diff --git a/finch/libgnt/gntmenu.c b/finch/libgnt/gntmenu.c
+index d418555..9c1e73c 100644
+--- a/finch/libgnt/gntmenu.c
++++ b/finch/libgnt/gntmenu.c
+@@ -220,7 +220,10 @@ gnt_menu_activate(GntWidget *widget)
+ static void
+ gnt_menu_hide(GntWidget *widget)
+ {
+-	GntMenu *menu = GNT_MENU(widget);
++	GntMenu *sub, *menu = GNT_MENU(widget);
++
++	while ((sub = menu->submenu))
++		gnt_widget_hide(GNT_WIDGET(sub));
+ 	if (menu->parentmenu)
+ 		menu->parentmenu->submenu = NULL;
+ }
+diff --git a/finch/libgnt/gnttree.c b/finch/libgnt/gnttree.c
+index 3e8dfde..a375d41 100644
+--- a/finch/libgnt/gnttree.c
++++ b/finch/libgnt/gnttree.c
+@@ -281,7 +281,7 @@ update_row_text(GntTree *tree, GntTreeRow *row)
+ 
+ 		notfirst = TRUE;
+ 
+-		if (len > width) {
++		if (len > width - 2) {
+ 			len = width - 1;
+ 			cut = TRUE;
+ 		}
+diff --git a/finch/libgnt/gntwindow.c b/finch/libgnt/gntwindow.c
+index e879b98..981ba82 100644
+--- a/finch/libgnt/gntwindow.c
++++ b/finch/libgnt/gntwindow.c
+@@ -5,9 +5,13 @@
+ 
+ enum
+ {
+-	SIGS = 1,
++	SIG_WORKSPACE_HIDE,
++	SIG_WORKSPACE_SHOW,
++	SIGS,
+ };
+ 
++static guint signals[SIGS] = { 0 };
++
+ static GntBoxClass *parent_class = NULL;
+ 
+ static void (*org_destroy)(GntWidget *widget);
+@@ -42,6 +46,24 @@ gnt_window_class_init(GntWindowClass *klass)
+ 	org_destroy = wid_class->destroy;
+ 	wid_class->destroy = gnt_window_destroy;
+ 
++	signals[SIG_WORKSPACE_HIDE] =
++		g_signal_new("workspace-hidden",
++					 G_TYPE_FROM_CLASS(klass),
++					 G_SIGNAL_RUN_LAST,
++					 0,
++					 NULL, NULL,
++					 g_cclosure_marshal_VOID__VOID,
++					 G_TYPE_NONE, 0);
++
++	signals[SIG_WORKSPACE_SHOW] =
++		g_signal_new("workspace-shown",
++					 G_TYPE_FROM_CLASS(klass),
++					 G_SIGNAL_RUN_LAST,
++					 0,
++					 NULL, NULL,
++					 g_cclosure_marshal_VOID__VOID,
++					 G_TYPE_NONE, 0);
++
+ 	gnt_bindable_class_register_action(bindable, "show-menu", show_menu,
+ 				GNT_KEY_CTRL_O, NULL);
+ 	gnt_bindable_register_binding(bindable, "show-menu", GNT_KEY_F10, NULL);
+@@ -109,6 +131,20 @@ GntWidget *gnt_window_box_new(gboolean homo, gboolean vert)
+ 	return wid;
+ }
+ 
++void
++gnt_window_workspace_hiding(GntWindow *window)
++{
++	if (window->menu)
++		gnt_widget_hide(GNT_WIDGET(window->menu));
++	g_signal_emit(window, signals[SIG_WORKSPACE_HIDE], 0);
++}
++
++void
++gnt_window_workspace_showing(GntWindow *window)
++{
++	g_signal_emit(window, signals[SIG_WORKSPACE_SHOW], 0);
++}
++
+ void gnt_window_set_menu(GntWindow *window, GntMenu *menu)
+ {
+ 	/* If a menu already existed, then destroy that first. */
+diff --git a/finch/libgnt/gntwindow.h b/finch/libgnt/gntwindow.h
+index fe39bb3..970c174 100644
+--- a/finch/libgnt/gntwindow.h
++++ b/finch/libgnt/gntwindow.h
+@@ -51,6 +51,9 @@ GntWidget *gnt_window_box_new(gboolean homo, gboolean vert);
+ 
+ void gnt_window_set_menu(GntWindow *window, GntMenu *menu);
+ 
++void gnt_window_workspace_hiding(GntWindow *);
++void gnt_window_workspace_showing(GntWindow *);
++
+ G_END_DECLS
+ 
+ #endif /* GNT_WINDOW_H */
+diff --git a/finch/libgnt/gntws.c b/finch/libgnt/gntws.c
+index b886fca..930c50a 100644
+--- a/finch/libgnt/gntws.c
++++ b/finch/libgnt/gntws.c
+@@ -1,15 +1,18 @@
+ #include <gmodule.h>
+ 
+ #include "gntbox.h"
+-#include "gntws.h"
+-#include "gntwm.h"
+ #include "gntwidget.h"
++#include "gntwindow.h"
++#include "gntwm.h"
++#include "gntws.h"
+ 
+ static void
+ widget_hide(gpointer data, gpointer nodes)
+ {
+ 	GntWidget *widget = GNT_WIDGET(data);
+ 	GntNode *node = g_hash_table_lookup(nodes, widget);
++	if (GNT_IS_WINDOW(widget))
++		gnt_window_workspace_hiding(GNT_WINDOW(widget));
+ 	hide_panel(node->panel);
+ }
+ 
+-- 
+1.7.10.4
+

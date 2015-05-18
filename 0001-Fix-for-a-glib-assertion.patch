@@ -1,0 +1,28 @@
+From d34f042952894003b4b87d5ab6df9dce18dfe84e Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Wed, 28 Nov 2007 03:52:27 +0000
+Subject: [PATCH] Fix for a glib assertion
+
+--HG--
+extra : convert_revision : 0fbf448aa3c17cb83eac458e6f9b06e38fd14d1d
+---
+ finch/libgnt/gntwindow.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/finch/libgnt/gntwindow.c b/finch/libgnt/gntwindow.c
+index 4f1da32..1423b71 100644
+--- a/finch/libgnt/gntwindow.c
++++ b/finch/libgnt/gntwindow.c
+@@ -62,7 +62,8 @@ gnt_window_destroy(GntWidget *widget)
+ 	if (window->menu)
+ 		gnt_widget_destroy(GNT_WIDGET(window->menu));
+ 	if (window->priv) {
+-		g_hash_table_destroy(window->priv->accels);
++		if (window->priv->accels)
++			g_hash_table_destroy(window->priv->accels);
+ 		g_free(window->priv);
+ 	}
+ 	org_destroy(widget);
+-- 
+1.7.10.4
+

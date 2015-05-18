@@ -1,0 +1,84 @@
+From 24e5e85600ab3e979f96ed8417708918401cdd83 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Mon, 16 Apr 2007 05:19:07 +0000
+Subject: [PATCH] emit/handle gnttree signals appropriately
+
+--HG--
+extra : convert_revision : b2915e456e0d33be3624b7edb844a6e787b7503f
+---
+ finch/libgnt/gntfilesel.c |    8 +++++---
+ finch/libgnt/gnttree.c    |   10 ++++++++--
+ 2 files changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/finch/libgnt/gntfilesel.c b/finch/libgnt/gntfilesel.c
+index 79e1fe8..0f325f8 100644
+--- a/finch/libgnt/gntfilesel.c
++++ b/finch/libgnt/gntfilesel.c
+@@ -412,9 +412,11 @@ success:
+ static void
+ file_sel_changed(GntWidget *widget, gpointer old, gpointer current, GntFileSel *sel)
+ {
+-	g_free(sel->suggest);
+-	sel->suggest = NULL;
+-	update_location(sel);
++	if (GNT_WIDGET_IS_FLAG_SET(widget, GNT_WIDGET_HAS_FOCUS)) {
++		g_free(sel->suggest);
++		sel->suggest = NULL;
++		update_location(sel);
++	}
+ }
+ 
+ static void
+diff --git a/finch/libgnt/gnttree.c b/finch/libgnt/gnttree.c
+index 496b335..c989ec6 100644
+--- a/finch/libgnt/gnttree.c
++++ b/finch/libgnt/gnttree.c
+@@ -47,6 +47,8 @@ struct _GntTreeCol
+ 	int span;       /* How many columns does it span? */
+ };
+ 
++static void tree_selection_changed(GntTree *, GntTreeRow *, GntTreeRow *);
++
+ static GntWidgetClass *parent_class = NULL;
+ static guint signals[SIGS] = { 0 };
+ 
+@@ -340,8 +342,10 @@ redraw_tree(GntTree *tree)
+ 
+ 	if (tree->top == NULL)
+ 		tree->top = tree->root;
+-	if (tree->current == NULL)
++	if (tree->current == NULL) {
+ 		tree->current = tree->root;
++		tree_selection_changed(tree, NULL, tree->current);
++	}
+ 
+ 	wbkgd(widget->window, COLOR_PAIR(GNT_COLOR_NORMAL));
+ 
+@@ -1394,7 +1398,7 @@ void gnt_tree_set_selected(GntTree *tree , void *key)
+ {
+ 	int dist;
+ 	GntTreeRow *row = g_hash_table_lookup(tree->hash, key);
+-	if (!row)
++	if (!row || row == tree->current)
+ 		return;
+ 
+ 	if (tree->top == NULL)
+@@ -1409,6 +1413,7 @@ void gnt_tree_set_selected(GntTree *tree , void *key)
+ 		gnt_tree_scroll(tree, -dist);
+ 	else
+ 		redraw_tree(tree);
++	tree_selection_changed(tree, row, tree->current);
+ }
+ 
+ void _gnt_tree_init_internals(GntTree *tree, int col)
+@@ -1514,6 +1519,7 @@ void gnt_tree_set_expanded(GntTree *tree, void *key, gboolean expanded)
+ 		row->collapsed = !expanded;
+ 		if (GNT_WIDGET(tree)->window)
+ 			gnt_widget_draw(GNT_WIDGET(tree));
++		g_signal_emit(tree, signals[SIG_COLLAPSED], 0, key, row->collapsed);
+ 	}
+ }
+ 
+-- 
+1.7.10.4
+

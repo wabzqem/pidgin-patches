@@ -1,0 +1,33 @@
+From 71c6389eee0dc70ea661cfa7088f37959645773d Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Mon, 6 Apr 2009 10:31:17 +0000
+Subject: [PATCH] Activate the current status for an account being enabled
+
+--HG--
+extra : convert_revision : a0d9c8509c017c1eb52b8b3e1172e9d0ee0b0a51
+---
+ finch/gntaccount.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/finch/gntaccount.c b/finch/gntaccount.c
+index b7fe539..0a1f683 100644
+--- a/finch/gntaccount.c
++++ b/finch/gntaccount.c
+@@ -669,8 +669,13 @@ static void
+ account_toggled(GntWidget *widget, void *key, gpointer null)
+ {
+ 	PurpleAccount *account = key;
++	gboolean enabled = gnt_tree_get_choice(GNT_TREE(widget), key);
+ 
+-	purple_account_set_enabled(account, FINCH_UI, gnt_tree_get_choice(GNT_TREE(widget), key));
++	if (enabled)
++		purple_savedstatus_activate_for_account(purple_savedstatus_get_current(),
++												account);
++
++	purple_account_set_enabled(account, FINCH_UI, enabled);
+ }
+ 
+ static gboolean
+-- 
+1.7.10.4
+

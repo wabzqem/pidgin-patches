@@ -1,0 +1,48 @@
+From 00af608a80ffb52358eab5ad27a5710802ea6686 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 9 Sep 2006 20:47:12 +0000
+Subject: [PATCH] [gaim-migrate @ 17205] Rest of SF Patch #1554627 from
+ Richard Nelson (wabz)
+
+"a user without an msnobject was having icon_checksum
+ removed on each status change"
+
+committer: Richard Laager <rlaager@pidgin.im>
+
+--HG--
+extra : convert_revision : 5d5655a6456101e0a6ecc272f86ae31fa4eafcf0
+---
+ libgaim/protocols/msn/slp.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/libgaim/protocols/msn/slp.c b/libgaim/protocols/msn/slp.c
+index a147643..3539d04 100644
+--- a/libgaim/protocols/msn/slp.c
++++ b/libgaim/protocols/msn/slp.c
+@@ -954,18 +954,19 @@ msn_queue_buddy_icon_request(MsnUser *user)
+ 		/* It seems the user has not set a msnobject */
+ 		GSList *sl, *list;
+ 
+-		/* TODO: I think we need better buddy icon core functions. */
+-		gaim_buddy_icons_set_for_user(account, user->passport, NULL, -1);
+-
+ 		list = gaim_find_buddies(account, user->passport);
+ 
+ 		for (sl = list; sl != NULL; sl = sl->next)
+ 		{
+ 			GaimBuddy *buddy = (GaimBuddy *)sl->data;
+-			gaim_blist_node_remove_setting((GaimBlistNode*)buddy, "icon_checksum");
++			if (buddy->icon)
++				gaim_blist_node_remove_setting((GaimBlistNode*)buddy, "icon_checksum");
+ 		}
+ 		g_slist_free(list);
+ 
++		/* TODO: I think we need better buddy icon core functions. */
++		gaim_buddy_icons_set_for_user(account, user->passport, NULL, 0);
++
+ 		return;
+ 	}
+ 
+-- 
+1.7.10.4
+

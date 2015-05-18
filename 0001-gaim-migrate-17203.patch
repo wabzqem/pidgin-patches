@@ -1,0 +1,78 @@
+From 7281c5a084e021194c3f303a275077639f517de1 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 9 Sep 2006 20:27:48 +0000
+Subject: [PATCH] [gaim-migrate @ 17203] Part of SF Patch #1554627 from
+ Richard Nelson (wabz)
+
+"The msn protocol currently calls serv_got_alias on all
+ buddy status changes (as they are NLN commands),
+ resulting in lots of unnecessary blist.xml write schedules.
+
+ serv_got_alias already checks if the alias has actually
+ changed before printing to the conv. The first hunk in
+ this patch checks it a bit earlier."
+
+The second hunk checks in the MSN prpl, which also avoids
+an extra call to msn_user_set_friendly_name().
+
+committer: Richard Laager <rlaager@pidgin.im>
+
+--HG--
+extra : convert_revision : b4239a78cfaf00b7830afcc2222b00caef2d416d
+---
+ libgaim/protocols/msn/notification.c |   11 +++++++----
+ libgaim/server.c                     |    5 +++--
+ 2 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/libgaim/protocols/msn/notification.c b/libgaim/protocols/msn/notification.c
+index f97c517..dae9c44 100644
+--- a/libgaim/protocols/msn/notification.c
++++ b/libgaim/protocols/msn/notification.c
+@@ -664,7 +664,7 @@ nln_cmd(MsnCmdProc *cmdproc, MsnCommand *cmd)
+ 	MsnUser *user;
+ 	MsnObject *msnobj;
+ 	int clientid;
+-	const char *state, *passport, *friendly;
++	const char *state, *passport, *friendly, *old_friendly;
+ 
+ 	session = cmdproc->session;
+ 	account = session->account;
+@@ -676,9 +676,12 @@ nln_cmd(MsnCmdProc *cmdproc, MsnCommand *cmd)
+ 
+ 	user = msn_userlist_find_user(session->userlist, passport);
+ 
+-	serv_got_alias(gc, passport, friendly);
+-
+-	msn_user_set_friendly_name(user, friendly);
++	old_friendly = msn_user_get_friendly_name(user);
++	if (old_friendly && strcmp(old_friendly, friendly))
++	{
++		serv_got_alias(gc, passport, friendly);
++		msn_user_set_friendly_name(user, friendly);
++	}
+ 
+ 	if (session->protocol_ver >= 9)
+ 	{
+diff --git a/libgaim/server.c b/libgaim/server.c
+index 60a57d1..a1c5589 100644
+--- a/libgaim/server.c
++++ b/libgaim/server.c
+@@ -215,12 +215,13 @@ serv_got_alias(GaimConnection *gc, const char *who, const char *alias)
+ 	for (buds = buddies; buds; buds = buds->next)
+ 	{
+ 		b = buds->data;
++		if (b->server_alias && !strcmp(b->server_alias, alias))
++			continue;
+ 		gaim_blist_server_alias_buddy(b, alias);
+ 
+ 		conv = gaim_find_conversation_with_account(GAIM_CONV_TYPE_IM, b->name, account);
+ 
+-		if (conv != NULL && b->server_alias != NULL &&
+-			strcmp(b->server_alias, alias))
++		if (conv != NULL)
+ 		{
+ 			char *tmp = g_strdup_printf(_("%s is now known as %s.\n"),
+ 										who, alias);
+-- 
+1.7.10.4
+

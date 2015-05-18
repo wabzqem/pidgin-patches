@@ -1,0 +1,36 @@
+From 80075686544aa3fa7caa913fb3b9b54269e0887e Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Wed, 23 May 2007 09:26:23 +0000
+Subject: [PATCH] Re-show the add buddy request dialog if something went
+ wrong. It's easy to lose the buddy who just added you
+ otherwise.
+
+--HG--
+extra : convert_revision : a128e310ce8622212e6b8b435d45a15c25abb2c3
+---
+ finch/gntblist.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/finch/gntblist.c b/finch/gntblist.c
+index 0d9f8fb..af33576 100644
+--- a/finch/gntblist.c
++++ b/finch/gntblist.c
+@@ -113,6 +113,7 @@ static void blist_show(PurpleBuddyList *list);
+ static void update_node_display(PurpleBlistNode *buddy, FinchBlist *ggblist);
+ static void update_buddy_display(PurpleBuddy *buddy, FinchBlist *ggblist);
+ static void account_signed_on_cb(PurpleConnection *pc, gpointer null);
++static void finch_request_add_buddy(PurpleAccount *account, const char *username, const char *grp, const char *alias);
+ 
+ /* Sort functions */
+ static int blist_node_compare_position(PurpleBlistNode *n1, PurpleBlistNode *n2);
+@@ -285,6 +286,7 @@ add_buddy_cb(void *data, PurpleRequestFields *allfields)
+ 
+ 	if (error)
+ 	{
++		finch_request_add_buddy(account, username, group, alias);
+ 		purple_notify_error(NULL, _("Error"), _("Error adding buddy"), error);
+ 		return;
+ 	}
+-- 
+1.7.10.4
+

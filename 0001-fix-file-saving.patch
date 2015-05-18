@@ -1,0 +1,104 @@
+From d2793c99e2d75a8d6e3234cb522841e44e794478 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Tue, 27 Mar 2007 00:46:18 +0000
+Subject: [PATCH] fix file saving
+
+--HG--
+extra : convert_revision : 3373e976438182796e93bab7ded908eba4db04ed
+---
+ finch/gntrequest.c        |    2 ++
+ finch/libgnt/gntfilesel.c |   19 +++++++++++++++----
+ finch/libgnt/gntfilesel.h |    3 +++
+ 3 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/finch/gntrequest.c b/finch/gntrequest.c
+index 5b2530d..370e244 100644
+--- a/finch/gntrequest.c
++++ b/finch/gntrequest.c
+@@ -582,6 +582,8 @@ finch_request_file(const char *title, const char *filename,
+ 	data->dialog = window;
+ 	gnt_box_set_title(GNT_BOX(window), title ? title : (savedialog ? _("Save File...") : _("Open File...")));
+ 	gnt_file_sel_set_current_location(sel, purple_home_dir());  /* XXX: */
++	if (savedialog)
++		gnt_file_sel_set_suggested_filename(sel, filename);
+ 	g_signal_connect(G_OBJECT(sel->cancel), "activate",
+ 			G_CALLBACK(file_cancel_cb), data);
+ 	g_signal_connect(G_OBJECT(sel->select), "activate",
+diff --git a/finch/libgnt/gntfilesel.c b/finch/libgnt/gntfilesel.c
+index b208219..4a8f043 100644
+--- a/finch/libgnt/gntfilesel.c
++++ b/finch/libgnt/gntfilesel.c
+@@ -28,6 +28,7 @@ gnt_file_sel_destroy(GntWidget *widget)
+ {
+ 	GntFileSel *sel = GNT_FILE_SEL(widget);
+ 	g_free(sel->current);
++	g_free(sel->suggest);
+ 	if (sel->tags) {
+ 		g_list_foreach(sel->tags, (GFunc)g_free, NULL);
+ 		g_list_free(sel->tags);
+@@ -70,7 +71,8 @@ update_location(GntFileSel *sel)
+ {
+ 	char *old;
+ 	const char *tmp;
+-	tmp = (const char*)gnt_tree_get_selection_data(sel->dirsonly ? GNT_TREE(sel->dirs) : GNT_TREE(sel->files));
++	tmp = sel->suggest ? sel->suggest :
++		(const char*)gnt_tree_get_selection_data(sel->dirsonly ? GNT_TREE(sel->dirs) : GNT_TREE(sel->files));
+ 	old = g_strdup_printf("%s%s%s", sel->current, sel->current[1] ? G_DIR_SEPARATOR_S : "", tmp ? tmp : "");
+ 	gnt_entry_set_text(GNT_ENTRY(sel->location), old);
+ 	g_free(old);
+@@ -230,6 +232,8 @@ success:
+ static void
+ file_sel_changed(GntWidget *widget, gpointer old, gpointer current, GntFileSel *sel)
+ {
++	g_free(sel->suggest);
++	sel->suggest = NULL;
+ 	update_location(sel);
+ }
+ 
+@@ -449,12 +453,19 @@ gboolean gnt_file_sel_get_dirs_only(GntFileSel *sel)
+ 	return sel->dirsonly;
+ }
+ 
++void gnt_file_sel_set_suggested_filename(GntFileSel *sel, const char *suggest)
++{
++	sel->suggest = g_strdup(suggest);
++}
++
+ char *gnt_file_sel_get_selected_file(GntFileSel *sel)
+ {
+ 	char *ret;
+-	const char *tmp;
+-	tmp = (const char*)gnt_tree_get_selection_data(sel->dirsonly ? GNT_TREE(sel->dirs) : GNT_TREE(sel->files));
+-	ret = g_strdup_printf("%s%s%s", sel->current, sel->current[1] ? G_DIR_SEPARATOR_S : "", tmp ? tmp : "");
++	if (sel->dirsonly) {
++		ret = g_strdup(g_path_get_dirname(gnt_entry_get_text(GNT_ENTRY(sel->location))));
++	} else {
++		ret = g_strdup(gnt_entry_get_text(GNT_ENTRY(sel->location)));
++	}
+ 	return ret;
+ }
+ 
+diff --git a/finch/libgnt/gntfilesel.h b/finch/libgnt/gntfilesel.h
+index ba5b364..a2bd1f5 100644
+--- a/finch/libgnt/gntfilesel.h
++++ b/finch/libgnt/gntfilesel.h
+@@ -33,6 +33,7 @@ struct _GntFileSel
+ 	GntWidget *cancel;   /* cancel button */
+ 
+ 	char *current; /* Full path of the current location */
++	char *suggest; /* Suggested filename */
+ 	/* XXX: someone should make these useful */
+ 	gboolean must_exist; /* Make sure the selected file (the name entered in 'location') exists */
+ 	gboolean dirsonly;   /* Show only directories */
+@@ -73,6 +74,8 @@ GList *gnt_file_sel_get_selected_multi_files(GntFileSel *sel);
+ 
+ void gnt_file_sel_set_multi_select(GntFileSel *sel, gboolean set);
+ 
++void gnt_file_sel_set_suggested_filename(GntFileSel *sel, const char *suggest);
++
+ G_END_DECLS
+ 
+ #endif /* GNT_FILE_SEL_H */
+-- 
+1.7.10.4
+

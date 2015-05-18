@@ -1,0 +1,50 @@
+From 622a8cca14d5d5cd640a6d4b2fe5fcaa709b3743 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Tue, 17 Oct 2006 04:34:55 +0000
+Subject: [PATCH] [gaim-migrate @ 17493] Patch from Richard Nelson (wabz).
+ This will allow the WM to do stuff when a window is closed.
+ Also, ignore SIGPIPE, although this doesn't seem to help.
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : 155e816fe795cdb4e5f782d5f3621cbfe01a36d7
+---
+ console/libgnt/gntmain.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/console/libgnt/gntmain.c b/console/libgnt/gntmain.c
+index 2f3d2a0..a519e79 100644
+--- a/console/libgnt/gntmain.c
++++ b/console/libgnt/gntmain.c
+@@ -268,7 +268,8 @@ draw_taskbar(gboolean reposition)
+ 			GNT_WIDGET_UNSET_FLAGS(w, GNT_WIDGET_URGENT);
+ 			if (wm.window_update) {
+ 				GntNode *node = g_hash_table_lookup(nodes, w);
+-				wm.window_update(node->panel, w);
++				if (node)
++					wm.window_update(node->panel, w);
+ 			}
+ 		} else if (GNT_WIDGET_IS_FLAG_SET(w, GNT_WIDGET_URGENT)) {
+ 			/* This is a window with the URGENT hint set */
+@@ -1158,6 +1159,7 @@ void gnt_init()
+ 	signal(SIGWINCH, sighandler);
+ #endif
+ 	signal(SIGCHLD, sighandler);
++	signal(SIGPIPE, SIG_IGN);
+ 
+ 	g_type_init();
+ 
+@@ -1225,6 +1227,9 @@ void gnt_screen_release(GntWidget *widget)
+ 	if (node == NULL)	/* Yay! Nothing to do. */
+ 		return;
+ 
++	if (GNT_WIDGET_IS_FLAG_SET(widget, GNT_WIDGET_DESTROYING) && wm.close_window)
++		wm.close_window(widget);
++
+ 	g_hash_table_remove(nodes, widget);
+ 
+ 	if (window_list)
+-- 
+1.7.10.4
+

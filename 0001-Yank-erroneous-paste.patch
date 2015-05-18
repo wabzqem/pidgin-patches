@@ -1,0 +1,35 @@
+From ce138e3f5c2bfb3a45645c15260e38c62504c3c7 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Mon, 3 Dec 2007 08:31:48 +0000
+Subject: [PATCH] Yank erroneous paste
+
+--HG--
+extra : convert_revision : 958829ffd959717a69243c55ac0ef6b6fc52c1a7
+---
+ doc/finch.1.in |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/doc/finch.1.in b/doc/finch.1.in
+index a4e0574..75acb58 100644
+--- a/doc/finch.1.in
++++ b/doc/finch.1.in
+@@ -157,6 +157,7 @@ color-timestamp = blue; default
+ .br
+ #See below for details on color
+ .br
++
+ [general]
+ .br
+ shadow = 0
+@@ -247,8 +248,6 @@ disabled = gray; black
+ .br
+ urgent = green; black
+ .br
+-urgent = green; black
+-.br
+ 
+ .br
+ # Remap some keys for GntEntry
+-- 
+1.7.10.4
+

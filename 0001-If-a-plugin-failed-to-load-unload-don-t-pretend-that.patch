@@ -1,0 +1,44 @@
+From 4827758de258cf55b367e73d8603a84443e6dcd0 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Thu, 19 Apr 2007 01:21:25 +0000
+Subject: [PATCH] If a plugin failed to load/unload, don't pretend that it
+ worked
+
+--HG--
+extra : convert_revision : 145924257b364f43865a88fd4c98ee10a8235efc
+---
+ finch/gntplugin.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/finch/gntplugin.c b/finch/gntplugin.c
+index dd34e40..7b50572 100644
+--- a/finch/gntplugin.c
++++ b/finch/gntplugin.c
+@@ -63,17 +63,22 @@ decide_conf_button(PurplePlugin *plugin)
+ static void
+ plugin_toggled_cb(GntWidget *tree, PurplePlugin *plugin, gpointer null)
+ {
++	/* TODO: Mark these strings for translation after the freeze */
+ 	if (gnt_tree_get_choice(GNT_TREE(tree), plugin))
+ 	{
+-		if(!purple_plugin_load(plugin))
++		if (!purple_plugin_load(plugin)) {
+ 			purple_notify_error(NULL, "ERROR", "loading plugin failed", NULL);
++			gnt_tree_set_choice(GNT_TREE(tree), plugin, FALSE);
++		}
+ 	}
+ 	else
+ 	{
+ 		GntWidget *win;
+ 
+-		if (!purple_plugin_unload(plugin))
++		if (!purple_plugin_unload(plugin)) {
+ 			purple_notify_error(NULL, "ERROR", "unloading plugin failed", NULL);
++			gnt_tree_set_choice(GNT_TREE(tree), plugin, TRUE);
++		}
+ 
+ 		if ((win = g_hash_table_lookup(confwins, plugin)) != NULL)
+ 		{
+-- 
+1.7.10.4
+

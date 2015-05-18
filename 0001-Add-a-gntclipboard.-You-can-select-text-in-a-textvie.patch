@@ -1,0 +1,659 @@
+From 46f6333b2b96c45cd3b43fc6c41faf36525b2d37 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Fri, 2 Mar 2007 01:48:11 +0000
+Subject: [PATCH] Add a gntclipboard. You can select text in a textview with
+ the mouse, and paste it in an entry with ctrl-v (or rebind
+ GntEntry's clipboard-paste). If you use the s.so WM,
+ pressing alt-shift-c ("toggle-clipboard") will toggle
+ display of the clipboard contents in a possibly
+ easy-to-copy-with-the-x-mouse window. This includes a
+ plugin which interacts with the X selection, which is not
+ built by default.
+
+--HG--
+extra : convert_revision : 611652664066573a771e9d2f8e4e9189b9a537fd
+---
+ console/libgnt/Makefile.am     |    2 +
+ console/libgnt/gnt.h           |    6 ++
+ console/libgnt/gntclipboard.c  |   74 +++++++++++++++++++
+ console/libgnt/gntclipboard.h  |   46 ++++++++++++
+ console/libgnt/gntentry.c      |   22 ++++++
+ console/libgnt/gntmain.c       |   17 +++++
+ console/libgnt/gnttextview.c   |  118 +++++++++++++++++++++++++++++-
+ console/libgnt/wms/s.c         |   30 ++++++++
+ console/plugins/gntclipboard.c |  157 ++++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 470 insertions(+), 2 deletions(-)
+ create mode 100644 console/libgnt/gntclipboard.c
+ create mode 100644 console/libgnt/gntclipboard.h
+ create mode 100644 console/plugins/gntclipboard.c
+
+diff --git a/console/libgnt/Makefile.am b/console/libgnt/Makefile.am
+index b0bc72f..66a3e37 100644
+--- a/console/libgnt/Makefile.am
++++ b/console/libgnt/Makefile.am
+@@ -13,6 +13,7 @@ libgnt_la_SOURCES = \
+ 	gntbox.c \
+ 	gntbutton.c \
+ 	gntcheckbox.c \
++	gntclipboard.c \
+ 	gntcolors.c \
+ 	gntcombobox.c \
+ 	gntentry.c \
+@@ -36,6 +37,7 @@ libgnt_la_headers = \
+ 	gntbox.h \
+ 	gntbutton.h \
+ 	gntcheckbox.h \
++	gntclipboard.h \
+ 	gntcolors.h \
+ 	gntcombobox.h \
+ 	gntentry.h \
+diff --git a/console/libgnt/gnt.h b/console/libgnt/gnt.h
+index 1767acc..334aab2 100644
+--- a/console/libgnt/gnt.h
++++ b/console/libgnt/gnt.h
+@@ -1,5 +1,6 @@
+ #include <glib.h>
+ #include "gntwidget.h"
++#include "gntclipboard.h"
+ #include "gntcolors.h"
+ #include "gntkeys.h"
+ 
+@@ -33,3 +34,8 @@ gboolean gnt_screen_menu_show(gpointer menu);
+ 
+ void gnt_quit();
+ 
++GntClipboard *gnt_get_clipboard();
++
++gchar *gnt_get_clipboard_string();
++
++void gnt_set_clipboard_string(gchar *);
+diff --git a/console/libgnt/gntclipboard.c b/console/libgnt/gntclipboard.c
+new file mode 100644
+index 0000000..b7f5568
+--- /dev/null
++++ b/console/libgnt/gntclipboard.c
+@@ -0,0 +1,74 @@
++#include "gntclipboard.h"
++
++gchar *string;
++
++enum {
++	SIG_CLIPBOARD = 0,
++	SIGS
++};
++
++static guint signals[SIGS] = { 0 };
++
++static void
++gnt_clipboard_class_init(GntClipboardClass *klass)
++{
++	signals[SIG_CLIPBOARD] = 
++		g_signal_new("clipboard_changed",
++					 G_TYPE_FROM_CLASS(klass),
++					 G_SIGNAL_RUN_LAST,
++					 0,
++					 NULL, NULL,
++					 g_cclosure_marshal_VOID__POINTER,
++					 G_TYPE_NONE, 1, G_TYPE_POINTER);
++
++}
++
++static GObjectClass *parent_class = NULL;
++/******************************************************************************
++ * GntClipboard API
++ *****************************************************************************/
++
++void
++gnt_clipboard_set_string(GntClipboard *clipboard, gchar *string)
++{
++	g_free(clipboard->string);
++	clipboard->string = g_strdup(string);
++	g_signal_emit(clipboard, signals[SIG_CLIPBOARD], 0, clipboard->string);
++}
++
++gchar *
++gnt_clipboard_get_string(GntClipboard *clipboard)
++{
++	return g_strdup(clipboard->string);
++}
++
++static void gnt_clipboard_init(GTypeInstance *instance, gpointer class) {
++	GntClipboard *clipboard = GNT_CLIPBOARD(instance);
++	clipboard->string = g_strdup("");
++}
++
++GType
++gnt_clipboard_get_gtype(void)
++{
++	static GType type = 0;
++
++	if (type == 0) {
++		static const GTypeInfo info = {
++			sizeof(GntClipboardClass),
++			NULL,					/* base_init		*/
++			NULL,					/* base_finalize	*/
++			(GClassInitFunc)gnt_clipboard_class_init,
++			NULL,
++			NULL,					/* class_data		*/
++			sizeof(GntClipboard),
++			0,						/* n_preallocs		*/
++			gnt_clipboard_init,		/* instance_init	*/
++		};
++
++		type = g_type_register_static(G_TYPE_OBJECT,
++									  "GntClipboard",
++									  &info, 0);
++	}
++
++	return type;
++}
+diff --git a/console/libgnt/gntclipboard.h b/console/libgnt/gntclipboard.h
+new file mode 100644
+index 0000000..29bf9a6
+--- /dev/null
++++ b/console/libgnt/gntclipboard.h
+@@ -0,0 +1,46 @@
++#ifndef GNT_CLIPBOARD_H
++#define GNT_CLIPBOARD_H
++
++#include <stdio.h>
++#include <glib.h>
++#include <glib-object.h>
++
++#define GNT_TYPE_CLIPBOARD				(gnt_clipboard_get_gtype())
++#define GNT_CLIPBOARD(obj)				(G_TYPE_CHECK_INSTANCE_CAST((obj), GNT_TYPE_CLIPBOARD, GntClipboard))
++#define GNT_CLIPBOARD_CLASS(klass)		(G_TYPE_CHECK_CLASS_CAST((klass), GNT_TYPE_CLIPBOARD, GntClipboardClass))
++#define GNT_IS_CLIPBOARD(obj)			(G_TYPE_CHECK_INSTANCE_TYPE((obj), GNT_TYPE_CLIPBOARD))
++#define GNT_IS_CLIPBOARD_CLASS(klass)	(G_TYPE_CHECK_CLASS_TYPE((klass), GNT_TYPE_CLIPBOARD))
++#define GNT_CLIPBOARD_GET_CLASS(obj)	(G_TYPE_INSTANCE_GET_CLASS((obj), GNT_TYPE_CLIPBOARD, GntClipboardClass))
++
++#define	GNTDEBUG	g_printerr("%s\n", __FUNCTION__)
++
++typedef struct _GnClipboard			GntClipboard;
++typedef struct _GnClipboardClass		GntClipboardClass;
++
++struct _GnClipboard
++{
++	GObject inherit;
++	gchar *string;
++};
++
++struct _GnClipboardClass
++{
++	GObjectClass parent;
++
++	void (*gnt_reserved1)(void);
++	void (*gnt_reserved2)(void);
++	void (*gnt_reserved3)(void);
++	void (*gnt_reserved4)(void);
++};
++
++G_BEGIN_DECLS
++
++GType gnt_clipboard_get_gtype(void);
++
++gchar *gnt_clipboard_get_string(GntClipboard *);
++
++void gnt_clipboard_set_string(GntClipboard *, gchar *);
++
++G_END_DECLS
++
++#endif
+diff --git a/console/libgnt/gntentry.c b/console/libgnt/gntentry.c
+index 5cc4a39..98ac203 100644
+--- a/console/libgnt/gntentry.c
++++ b/console/libgnt/gntentry.c
+@@ -299,6 +299,26 @@ history_next(GntBindable *bind, GList *null)
+ }
+ 
+ static gboolean
++clipboard_paste(GntBindable *bind, GList *n)
++{
++	GntEntry *entry = GNT_ENTRY(bind);
++	gchar *i;
++	gchar *text = i = gnt_get_clipboard_string();
++	while (*i != '\0') {
++		i = g_utf8_next_char(i);
++		if (*i == '\r' || *i == '\n')
++			*i = ' ';
++	}
++	char *a = g_strndup(entry->start, entry->cursor - entry->start);
++	char *all = g_strconcat(a, text, entry->cursor, NULL);
++	gnt_entry_set_text_internal(entry, all);
++	g_free(a);
++	g_free(text);
++	g_free(all);
++	return TRUE;
++}
++
++static gboolean
+ suggest_show(GntBindable *bind, GList *null)
+ {
+ 	return show_suggest_dropdown(GNT_ENTRY(bind));
+@@ -673,6 +693,8 @@ gnt_entry_class_init(GntEntryClass *klass)
+ 				GNT_KEY_CTRL_DOWN, NULL);
+ 	gnt_bindable_class_register_action(bindable, "history-next", history_next,
+ 				GNT_KEY_CTRL_UP, NULL);
++	gnt_bindable_class_register_action(bindable, "clipboard-past", clipboard_paste,
++				GNT_KEY_CTRL_V, NULL);
+ 
+ 	gnt_style_read_actions(G_OBJECT_CLASS_TYPE(klass), GNT_BINDABLE_CLASS(klass));
+ 	GNTDEBUG;
+diff --git a/console/libgnt/gntmain.c b/console/libgnt/gntmain.c
+index 98c4681..9c394c1 100644
+--- a/console/libgnt/gntmain.c
++++ b/console/libgnt/gntmain.c
+@@ -10,6 +10,7 @@
+ #include "gnt.h"
+ #include "gntbox.h"
+ #include "gntcolors.h"
++#include "gntclipboard.h"
+ #include "gntkeys.h"
+ #include "gntmenu.h"
+ #include "gntstyle.h"
+@@ -48,6 +49,7 @@ static void setup_io();
+ static gboolean refresh_screen();
+ 
+ GntWM *wm;
++static GntClipboard *clipboard;
+ 
+ /**
+  * Mouse support:
+@@ -347,6 +349,8 @@ void gnt_init()
+ 	g_type_init();
+ 
+ 	init_wm();
++
++	clipboard = g_object_new(GNT_TYPE_CLIPBOARD, NULL);
+ }
+ 
+ void gnt_main()
+@@ -475,3 +479,16 @@ gboolean gnt_screen_menu_show(gpointer newmenu)
+ 	return TRUE;
+ }
+ 
++void gnt_set_clipboard_string(gchar *string)
++{
++	gnt_clipboard_set_string(clipboard, string);
++}
++
++GntClipboard *gnt_get_clipboard()
++{
++	return clipboard;
++}
++gchar *gnt_get_clipboard_string()
++{
++	return gnt_clipboard_get_string(clipboard);
++}
+diff --git a/console/libgnt/gnttextview.c b/console/libgnt/gnttextview.c
+index 2be330d..5bb7e02 100644
+--- a/console/libgnt/gnttextview.c
++++ b/console/libgnt/gnttextview.c
+@@ -32,6 +32,10 @@ typedef struct
+ 
+ static GntWidgetClass *parent_class = NULL;
+ 
++static gchar *select_start;
++static gchar *select_end;
++static gboolean double_click;
++
+ static void
+ gnt_text_view_draw(GntWidget *widget)
+ {
+@@ -54,9 +58,29 @@ gnt_text_view_draw(GntWidget *widget)
+ 			GntTextSegment *seg = iter->data;
+ 			char *end = view->string->str + seg->end;
+ 			char back = *end;
++			chtype fl = seg->flags;
+ 			*end = '\0';
+-			wattrset(widget->window, seg->flags);
+-			wprintw(widget->window, "%s", (view->string->str + seg->start));
++			if (select_start < view->string->str + seg->start && select_end > view->string->str + seg->end) {
++				fl |= A_REVERSE;
++				wattrset(widget->window, fl);
++				wprintw(widget->window, "%s", (view->string->str + seg->start));
++			} else if (select_start && select_end &&
++				((select_start >= view->string->str + seg->start && select_start <= view->string->str + seg->end) ||
++				(select_end <= view->string->str + seg->end && select_start <= view->string->str + seg->start))) {
++				char *cur = view->string->str + seg->start;
++				while (*cur != '\0') {
++					if (cur >= select_start && cur <= select_end)
++						fl |= A_REVERSE;
++					else
++						fl = seg->flags;
++					wattrset(widget->window, fl);
++					waddch(widget->window, *cur);
++					cur++;
++				}
++			} else {
++				wattrset(widget->window, fl);
++				wprintw(widget->window, "%s", (view->string->str + seg->start));
++			}
+ 			*end = back;
+ 		}
+ 		wattroff(widget->window, A_UNDERLINE | A_BLINK | A_REVERSE);
+@@ -160,6 +184,66 @@ gnt_text_view_destroy(GntWidget *widget)
+ 	g_string_free(view->string, TRUE);
+ }
+ 
++static char *
++gnt_text_view_get_p(GntTextView *view, int x, int y)
++{
++	int i;
++	GntWidget *wid = GNT_WIDGET(view);
++	GntTextLine *line;
++	GList *lines;
++	GList *segs;
++	GntTextSegment *seg;
++
++	y = wid->priv.height - y;
++	if (g_list_length(view->list) < y) {
++		x = 0;
++		y = g_list_length(view->list);
++	}
++
++	lines = g_list_nth(view->list, y - 1);
++
++	line = lines->data;
++	for (i = y; line && !line->segments; i++)
++		line = g_list_nth_data(lines, i);
++	if (!line) /* no valid line */
++		return NULL;
++	segs = line->segments;
++	seg = (GntTextSegment *)segs->data;
++	i = 0;
++	return view->string->str + seg->start + x;
++}
++
++static GString *
++select_word_text(GntTextView *view, gchar *c)
++{
++	gchar *start = c;
++	gchar *end = c;
++	gchar *t;
++	while (t = g_utf8_prev_char(start)) {
++		if (!g_ascii_isspace(*t)) {
++			if (start == view->string->str)
++				break;
++			start = t;
++		} else
++			break;
++	}
++	while (t = g_utf8_next_char(end)) {
++		if (!g_ascii_isspace(*t))
++			end = t;
++		else
++			break;
++	}
++	select_start = start;
++	select_end = end;
++	return g_string_new_len(start, end - start + 1);
++}
++
++static gboolean too_slow(gpointer n)
++{
++	double_click = FALSE;
++	return FALSE;
++}
++
+ static gboolean
+ gnt_text_view_clicked(GntWidget *widget, GntMouseEvent event, int x, int y)
+ {
+@@ -167,6 +251,36 @@ gnt_text_view_clicked(GntWidget *widget, GntMouseEvent event, int x, int y)
+ 		gnt_text_view_scroll(GNT_TEXT_VIEW(widget), -1);
+ 	} else if (event == GNT_MOUSE_SCROLL_DOWN) {
+ 		gnt_text_view_scroll(GNT_TEXT_VIEW(widget), 1);
++	} else if (event == GNT_LEFT_MOUSE_DOWN) {
++		select_start = gnt_text_view_get_p(GNT_TEXT_VIEW(widget), x - widget->priv.x, y - widget->priv.y);
++		g_timeout_add(500, too_slow, NULL);
++	} else if (event == GNT_MOUSE_UP) {
++		if (select_start) {
++			GString *clip;
++			select_end = gnt_text_view_get_p(GNT_TEXT_VIEW(widget), x - widget->priv.x, y - widget->priv.y);
++			if (select_end < select_start) {
++				gchar *t = select_start;
++				select_start = select_end;
++				select_end = t;
++			}
++			if (select_start == select_end) {
++				if (double_click) {
++					clip = select_word_text(GNT_TEXT_VIEW(widget), select_start);
++					double_click = FALSE;
++				} else {
++					double_click = TRUE;
++					select_start = 0;
++					select_end = 0;
++					gnt_widget_draw(widget);
++					return;
++				}
++			} else {
++				clip = g_string_new_len(select_start, select_end - select_start + 1);
++			}
++			gnt_widget_draw(widget);
++			gnt_set_clipboard_string(clip->str);
++			g_string_free(clip, TRUE);
++		}
+ 	} else
+ 		return FALSE;
+ 	return TRUE;
+diff --git a/console/libgnt/wms/s.c b/console/libgnt/wms/s.c
+index 89ff7bb..2d1618f 100644
+--- a/console/libgnt/wms/s.c
++++ b/console/libgnt/wms/s.c
+@@ -3,6 +3,8 @@
+ #include "gntmenu.h"
+ #include "gntstyle.h"
+ #include "gntwm.h"
++#include "gntwindow.h"
++#include "gntlabel.h"
+ 
+ #include "blist.h"
+ 
+@@ -165,6 +167,32 @@ toggle_buddylist(GntBindable *bindable, GList *null)
+ 	return TRUE;
+ }
+ 
++static gboolean
++toggle_clipboard(GntBindable *bindable, GList *n)
++{
++	static GntWidget *clip;
++	gchar *text;
++	int maxx, maxy;
++	if (clip) {
++		gnt_widget_destroy(clip);
++		clip = NULL;
++		return TRUE;
++	}
++	getmaxyx(stdscr, maxy, maxx);
++	text = gnt_get_clipboard_string();
++	clip = gnt_hwindow_new(FALSE);
++	GNT_WIDGET_SET_FLAGS(clip, GNT_WIDGET_TRANSIENT);
++	GNT_WIDGET_UNSET_FLAGS(clip, GNT_WIDGET_NO_BORDER);
++	gnt_box_set_pad(GNT_BOX(clip), 0);
++	gnt_box_add_widget(GNT_BOX(clip), gnt_label_new(" "));
++	gnt_box_add_widget(GNT_BOX(clip), gnt_label_new(text));
++	gnt_box_add_widget(GNT_BOX(clip), gnt_label_new(" "));
++	gnt_widget_set_position(clip, 0, 0);
++	gnt_widget_draw(clip);
++	g_free(text);
++	return TRUE;
++}
++
+ static void
+ s_class_init(SClass *klass)
+ {
+@@ -179,6 +207,8 @@ s_class_init(SClass *klass)
+ 
+ 	gnt_bindable_class_register_action(GNT_BINDABLE_CLASS(klass), "toggle-buddylist",
+ 				toggle_buddylist, "\033" "b", NULL);
++	gnt_bindable_class_register_action(GNT_BINDABLE_CLASS(klass), "toggle-clipboard",
++				toggle_clipboard, "\033" "C", NULL);
+ 	gnt_style_read_actions(G_OBJECT_CLASS_TYPE(klass), GNT_BINDABLE_CLASS(klass));
+ 	GNTDEBUG;
+ }
+diff --git a/console/plugins/gntclipboard.c b/console/plugins/gntclipboard.c
+new file mode 100644
+index 0000000..719f197
+--- /dev/null
++++ b/console/plugins/gntclipboard.c
+@@ -0,0 +1,157 @@
++/**
++ * @file gntclipboard.c
++ *
++ * Copyright (C) 2007 Richard Nelson <wabz@whatsbeef.net>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++
++#include "internal.h"
++#include <glib.h>
++
++#define PLUGIN_STATIC_NAME	"GntClipboard"
++
++#ifdef HAVE_X11
++#include <X11/Xlib.h>
++#include <X11/Xutil.h>
++#include <X11/Xatom.h>
++#endif
++
++#include <glib.h>
++
++#include <plugin.h>
++#include <version.h>
++#include <debug.h>
++#include <gntwm.h>
++
++#include <gntplugin.h>
++
++static gboolean stop = FALSE;
++
++static gulong sig_handle;
++
++static gpointer *
++set_clip(gchar *string)
++{
++#ifdef HAVE_X11
++	Window w;
++	XEvent e, respond;
++	XSelectionRequestEvent *req;
++	const char *ids;
++	Display *dpy = XOpenDisplay(NULL);
++
++	if (!dpy)
++		return NULL;
++	ids = getenv("WINDOWID");
++	if (ids == NULL)
++		return NULL;
++	w = atoi(ids);
++	XSetSelectionOwner(dpy, XA_PRIMARY, w, CurrentTime);
++	XFlush(dpy);
++	XSelectInput(dpy, w, StructureNotifyMask);
++	while (!stop) {
++		XNextEvent(dpy, &e);
++		req = &e.xselectionrequest;
++		if (e.type == SelectionRequest) {
++			XChangeProperty(dpy,
++				req->requestor,
++				req->property,
++				XA_STRING,
++				8, PropModeReplace,
++				(unsigned char *)string,
++				strlen(string));
++			respond.xselection.property = req->property;
++			respond.xselection.type = SelectionNotify;
++			respond.xselection.display = req->display;
++			respond.xselection.requestor = req->requestor;
++			respond.xselection.selection = req->selection;
++			respond.xselection.target= req->target;
++			respond.xselection.time = req->time;
++			XSendEvent(dpy, req->requestor, 0, 0, &respond);
++			XFlush (dpy);
++		} else if (e.type == SelectionClear) {
++			return NULL;
++		}
++	}
++#endif
++	return NULL;
++}
++
++static void
++clipboard_changed(GntWM *wm, gchar *string)
++{
++#ifdef HAVE_X11
++	static GThread *thread = NULL;
++	if (thread) {
++		stop = TRUE;
++		thread = g_thread_join(thread);
++	}
++	g_thread_create((GThreadFunc)set_clip, string, TRUE, NULL);
++#endif
++}
++
++static gboolean
++plugin_load(GaimPlugin *plugin)
++{
++	if (!XOpenDisplay(NULL))
++		gaim_debug_warning("gntclipboard", "Couldn't find X display\n");
++	if (!getenv("WINDOWID"))
++		gaim_debug_warning("gntclipboard", "Couldn't find window\n");
++	sig_handle = g_signal_connect(G_OBJECT(gnt_get_clipboard()), "clipboard_changed", G_CALLBACK(clipboard_changed), NULL);
++	return TRUE;
++}
++
++static gboolean
++plugin_unload(GaimPlugin *plugin)
++{
++	g_signal_handler_disconnect(G_OBJECT(gnt_get_clipboard()), sig_handle);
++	return TRUE;
++}
++
++static GaimPluginInfo info =
++{
++	GAIM_PLUGIN_MAGIC,
++	GAIM_MAJOR_VERSION,
++	GAIM_MINOR_VERSION,
++	GAIM_PLUGIN_STANDARD,
++	GAIM_GNT_PLUGIN_TYPE,
++	0,
++	NULL,
++	GAIM_PRIORITY_DEFAULT,
++	"gntclipboard",
++	N_("GntClipboard"),
++	VERSION,
++	N_("Clipboard plugin"),
++	N_("When the gnt clipboard contents change, "
++		"the contents are made available to X, if possible."),
++	"Richard Nelson <wabz@whatsbeef.net>",
++	"http://gaim.sourceforge.net",
++	plugin_load,
++	plugin_unload,
++	NULL,
++	NULL,
++	NULL,
++	NULL,
++	NULL
++};
++
++static void
++init_plugin(GaimPlugin *plugin)
++{
++	g_thread_init(NULL);
++}
++
++GAIM_INIT_PLUGIN(PLUGIN_STATIC_NAME, init_plugin, info)
+-- 
+1.7.10.4
+

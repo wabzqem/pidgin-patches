@@ -1,0 +1,30 @@
+From 46c5943268f10d853be19686557a0411c1c0f499 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sun, 10 Sep 2006 02:09:45 +0000
+Subject: [PATCH] [gaim-migrate @ 17213] Correction from wabz on his previous
+ patch.
+
+committer: Richard Laager <rlaager@pidgin.im>
+
+--HG--
+extra : convert_revision : 949e8dcf2e80eb4b46c8f19747087d08f1854d23
+---
+ libgaim/protocols/msn/notification.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libgaim/protocols/msn/notification.c b/libgaim/protocols/msn/notification.c
+index dae9c44..e99608e 100644
+--- a/libgaim/protocols/msn/notification.c
++++ b/libgaim/protocols/msn/notification.c
+@@ -677,7 +677,7 @@ nln_cmd(MsnCmdProc *cmdproc, MsnCommand *cmd)
+ 	user = msn_userlist_find_user(session->userlist, passport);
+ 
+ 	old_friendly = msn_user_get_friendly_name(user);
+-	if (old_friendly && strcmp(old_friendly, friendly))
++	if (!old_friendly || (old_friendly && strcmp(old_friendly, friendly)))
+ 	{
+ 		serv_got_alias(gc, passport, friendly);
+ 		msn_user_set_friendly_name(user, friendly);
+-- 
+1.7.10.4
+

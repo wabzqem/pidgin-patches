@@ -1,0 +1,27 @@
+From 7b780357d4410990ac930a5ad80309f56725fe7e Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 2 Feb 2008 03:51:46 +0000
+Subject: [PATCH] Make this clearer
+
+--HG--
+extra : convert_revision : a180198dd2a2bf5d9496c94d234b1efcea2a14de
+---
+ finch/gntpounce.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/finch/gntpounce.c b/finch/gntpounce.c
+index 38b2c2e..29500d7 100644
+--- a/finch/gntpounce.c
++++ b/finch/gntpounce.c
+@@ -457,7 +457,7 @@ finch_pounce_editor_show(PurpleAccount *account, const char *name,
+ 
+ 	gnt_box_add_widget(GNT_BOX(window), gnt_line_new(FALSE));
+ 	gnt_box_add_widget(GNT_BOX(window), gnt_label_new_with_format(_("Options"), GNT_TEXT_FLAG_BOLD));
+-	dialog->on_away = gnt_check_box_new(_("Pounce only when my status is not available"));
++	dialog->on_away = gnt_check_box_new(_("Pounce only when my status is not Available"));
+ 	gnt_box_add_widget(GNT_BOX(window), dialog->on_away);
+ 	dialog->save_pounce = gnt_check_box_new(_("Recurring"));
+ 	gnt_box_add_widget(GNT_BOX(window), dialog->save_pounce);
+-- 
+1.7.10.4
+

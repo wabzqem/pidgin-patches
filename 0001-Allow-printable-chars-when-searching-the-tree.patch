@@ -1,0 +1,27 @@
+From 2d9c77ccfa6413cec0f4f6f55b280e6844b58ce9 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Thu, 5 Nov 2009 02:50:48 +0000
+Subject: [PATCH] Allow printable chars when searching the tree
+
+--HG--
+extra : convert_revision : a1474abb75af23a970dc1157cc5746f2d6dce353
+---
+ finch/libgnt/gnttree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/finch/libgnt/gnttree.c b/finch/libgnt/gnttree.c
+index 6bb4956..6f03c3b 100644
+--- a/finch/libgnt/gnttree.c
++++ b/finch/libgnt/gnttree.c
+@@ -815,7 +815,7 @@ gnt_tree_key_pressed(GntWidget *widget, const char *text)
+ 		gnt_widget_activate(widget);
+ 	} else if (tree->priv->search) {
+ 		gboolean changed = TRUE;
+-		if (isalnum(*text)) {
++		if (g_unichar_isprint(*text)) {
+ 			tree->priv->search = g_string_append_c(tree->priv->search, *text);
+ 		} else if (g_utf8_collate(text, GNT_KEY_BACKSPACE) == 0) {
+ 			if (tree->priv->search->len)
+-- 
+1.7.10.4
+

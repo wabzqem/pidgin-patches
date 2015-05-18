@@ -1,0 +1,27 @@
+From f4f98c89bea1468c79c2893b33b25fec954987ce Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Thu, 31 Jan 2008 04:40:04 +0000
+Subject: [PATCH] Fix a crash when pressing backspace at a menu
+
+--HG--
+extra : convert_revision : 1cb1d29b42562ea7d827ccd5002186d9268a0aab
+---
+ finch/libgnt/gnttree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/finch/libgnt/gnttree.c b/finch/libgnt/gnttree.c
+index 88f5a4d..532fdcf 100644
+--- a/finch/libgnt/gnttree.c
++++ b/finch/libgnt/gnttree.c
+@@ -684,7 +684,7 @@ action_move_parent(GntBindable *bind, GList *null)
+ 	GntTreeRow *row = tree->current;
+ 	int dist;
+ 
+-	if (!row->parent || SEARCHING(tree))
++	if (!row || !row->parent || SEARCHING(tree))
+ 		return FALSE;
+ 
+ 	tree->current = row->parent;
+-- 
+1.7.10.4
+

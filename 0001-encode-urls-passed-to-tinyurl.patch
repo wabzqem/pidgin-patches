@@ -1,0 +1,30 @@
+From 77b7be7a013eb7a871b270c07f7c78531eff38a3 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Tue, 7 Apr 2009 23:26:33 +0000
+Subject: [PATCH] encode urls passed to tinyurl
+
+--HG--
+extra : convert_revision : d06861c0233a08c48f31b253b29595bf9af87618
+---
+ finch/plugins/gnttinyurl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/finch/plugins/gnttinyurl.c b/finch/plugins/gnttinyurl.c
+index fbf1a90..8ad8401 100644
+--- a/finch/plugins/gnttinyurl.c
++++ b/finch/plugins/gnttinyurl.c
+@@ -293,9 +293,9 @@ static void received_msg(PurpleAccount *account, char *sender, char *message,
+ 		cbdata->conv = conv;
+ 		tmp = purple_unescape_html((char *)iter->data);
+ 		if (g_ascii_strncasecmp(tmp, "http://", 7) && g_ascii_strncasecmp(tmp, "https://", 8)) {
+-			url = g_strdup_printf("%shttp://%s", purple_prefs_get_string(PREF_URL), tmp);
++			url = g_strdup_printf("%shttp%%3A%%2F%%2F%s", purple_prefs_get_string(PREF_URL), purple_url_encode(tmp));
+ 		} else {
+-			url = g_strdup_printf("%s%s", purple_prefs_get_string(PREF_URL), tmp);
++			url = g_strdup_printf("%s%s", purple_prefs_get_string(PREF_URL), purple_url_encode(tmp));
+ 		}
+ 		g_free(tmp);
+ 		purple_util_fetch_url(url, TRUE, "finch", FALSE, url_fetched, cbdata);
+-- 
+1.7.10.4
+

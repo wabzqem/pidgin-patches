@@ -1,0 +1,29 @@
+From 458cd9802fbcb84c3bb57d3238a3339b492708f4 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 14 Oct 2006 01:56:10 +0000
+Subject: [PATCH] [gaim-migrate @ 17478] Patch from Richard Nelson (wabz) to
+ plug a leak.
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : 2147c52711d6a0126312ef665343d24dbb9dd0be
+---
+ console/gntgaim.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/console/gntgaim.c b/console/gntgaim.c
+index 413ea70..ba925cf 100644
+--- a/console/gntgaim.c
++++ b/console/gntgaim.c
+@@ -252,6 +252,7 @@ init_libgaim(int argc, char **argv)
+ 	/* set a user-specified config directory */
+ 	if (opt_config_dir_arg != NULL) {
+ 		gaim_util_set_user_dir(opt_config_dir_arg);
++		g_free(opt_config_dir_arg);
+ 	}
+ 
+ 	/*
+-- 
+1.7.10.4
+

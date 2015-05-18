@@ -1,0 +1,41 @@
+From 6dafae2edd5a4d9d055388f408c716c38327e92d Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Fri, 8 Jun 2007 12:43:57 +0000
+Subject: [PATCH] present existing conversation window if one exists
+
+--HG--
+branch : release-2.1.0
+extra : convert_revision : f9fde664d495819679adeb390328646e1208ee22
+---
+ finch/gntblist.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/finch/gntblist.c b/finch/gntblist.c
+index 085bb4d..37b8dad 100644
+--- a/finch/gntblist.c
++++ b/finch/gntblist.c
+@@ -640,9 +640,18 @@ selection_activate(GntWidget *widget, FinchBlist *ggblist)
+ 	if (PURPLE_BLIST_NODE_IS_BUDDY(node))
+ 	{
+ 		PurpleBuddy *buddy = (PurpleBuddy *)node;
+-		PurpleConversation *conv =  purple_conversation_new(PURPLE_CONV_TYPE_IM,
+-					purple_buddy_get_account(buddy),
+-					purple_buddy_get_name(buddy));
++		PurpleConversation *conv;
++		conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM,
++					purple_buddy_get_name(buddy),
++					purple_buddy_get_account(buddy));
++		if (!conv) {
++			conv =  purple_conversation_new(PURPLE_CONV_TYPE_IM,
++						purple_buddy_get_account(buddy),
++						purple_buddy_get_name(buddy));
++		} else {
++			FinchConv *ggconv = conv->ui_data;
++			gnt_window_present(ggconv->window);
++		}
+ 		finch_conversation_set_active(conv);
+ 	}
+ 	else if (PURPLE_BLIST_NODE_IS_CHAT(node))
+-- 
+1.7.10.4
+

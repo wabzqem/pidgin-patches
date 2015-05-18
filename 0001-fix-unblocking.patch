@@ -1,0 +1,27 @@
+From c70328a15810e1fb358419924198514a552afe11 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 2 Feb 2008 22:32:54 +0000
+Subject: [PATCH] fix unblocking
+
+--HG--
+extra : convert_revision : e0c2dd4a51a49752f23a90ce7d93320d3b848cb9
+---
+ finch/gntblist.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/finch/gntblist.c b/finch/gntblist.c
+index 30b390b..fefb839 100644
+--- a/finch/gntblist.c
++++ b/finch/gntblist.c
+@@ -2568,7 +2568,7 @@ block_select_cb(gpointer data, PurpleRequestFields *fields)
+ 		if (purple_request_fields_get_choice(fields, "block") == 1) {
+ 			purple_privacy_deny(account, name, FALSE, FALSE);
+ 		} else {
+-			purple_privacy_deny(account, name, FALSE, FALSE);
++			purple_privacy_allow(account, name, FALSE, FALSE);
+ 		}
+ 	}
+ }
+-- 
+1.7.10.4
+

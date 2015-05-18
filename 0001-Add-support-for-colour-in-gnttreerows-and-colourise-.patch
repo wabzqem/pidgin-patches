@@ -1,0 +1,408 @@
+From 49b24d41e663398539dfc54295570aa12119ac59 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Fri, 30 Nov 2007 03:17:07 +0000
+Subject: [PATCH] Add support for colour in gnttreerows, and colourise the
+ blist. Fixes #1490
+
+--HG--
+extra : convert_revision : 01e2986fe6e826268c0b6533d70889232bf86dea
+---
+ doc/finch.1.in           |   12 ++++++
+ finch/gntblist.c         |   95 ++++++++++++++++++++++++++++++++++++++--------
+ finch/libgnt/gntcolors.c |   16 +++++---
+ finch/libgnt/gntcolors.h |   21 ++++++++++
+ finch/libgnt/gntstyle.c  |   15 ++++++++
+ finch/libgnt/gntstyle.h  |   14 +++++++
+ finch/libgnt/gnttree.c   |   18 ++++++++-
+ finch/libgnt/gnttree.h   |    9 +++++
+ 8 files changed, 179 insertions(+), 21 deletions(-)
+
+diff --git a/doc/finch.1.in b/doc/finch.1.in
+index c619d689..43afd37 100644
+--- a/doc/finch.1.in
++++ b/doc/finch.1.in
+@@ -135,6 +135,18 @@ Create a new workspace and switch to it
+ .TP
+ A sample file looks like:
+ .br
++[Finch]
++.br
++online-color: green; black
++.br
++away-color: blue; black
++.br
++idle-color: gray; black
++.br
++offline-color: red; black
++.br
++#See below for details on color
++.br
+ [general]
+ .br
+ shadow = 0
+diff --git a/finch/gntblist.c b/finch/gntblist.c
+index 729822e..319d506 100644
+--- a/finch/gntblist.c
++++ b/finch/gntblist.c
+@@ -27,6 +27,7 @@
+ 
+ #include <account.h>
+ #include <blist.h>
++#include <curses.h>
+ #include <notify.h>
+ #include <request.h>
+ #include <savedstatuses.h>
+@@ -37,6 +38,7 @@
+ #include "debug.h"
+ 
+ #include "gntbox.h"
++#include "gntcolors.h"
+ #include "gntcombobox.h"
+ #include "gntentry.h"
+ #include "gntft.h"
+@@ -46,6 +48,7 @@
+ #include "gntmenuitem.h"
+ #include "gntmenuitemcheck.h"
+ #include "gntpounce.h"
++#include "gntstyle.h"
+ #include "gnttree.h"
+ #include "gntutils.h"
+ #include "gntwindow.h"
+@@ -124,6 +127,11 @@ static int blist_node_compare_text(PurpleBlistNode *n1, PurpleBlistNode *n2);
+ static int blist_node_compare_status(PurpleBlistNode *n1, PurpleBlistNode *n2);
+ static int blist_node_compare_log(PurpleBlistNode *n1, PurpleBlistNode *n2);
+ 
++static int color_available;
++static int color_away;
++static int color_offline;
++static int color_idle;
++
+ static gboolean
+ is_contact_online(PurpleContact *contact)
+ {
+@@ -615,12 +623,20 @@ add_buddy(PurpleBuddy *buddy, FinchBlist *ggblist)
+ 	node->ui_data = gnt_tree_add_row_after(GNT_TREE(ggblist->tree), buddy,
+ 				gnt_tree_create_row(GNT_TREE(ggblist->tree), get_display_name(node)),
+ 				contact, NULL);
++
+ 	if (purple_presence_is_idle(purple_buddy_get_presence(buddy))) {
+-		gnt_tree_set_row_flags(GNT_TREE(ggblist->tree), buddy, GNT_TEXT_FLAG_DIM);
+-		gnt_tree_set_row_flags(GNT_TREE(ggblist->tree), contact, GNT_TEXT_FLAG_DIM);
+-	} else {
+-		gnt_tree_set_row_flags(GNT_TREE(ggblist->tree), buddy, 0);
+-		gnt_tree_set_row_flags(GNT_TREE(ggblist->tree), contact, 0);
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), buddy, color_idle);
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_idle);
++	} else if (purple_presence_is_available(purple_buddy_get_presence(buddy)) && color_available) {
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), buddy, color_available);
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_available);
++	} else if (purple_presence_is_online(purple_buddy_get_presence(buddy)) &&
++			!purple_presence_is_available(purple_buddy_get_presence(buddy)) && color_away) {
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), buddy, color_away);
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_away);
++	} else if (!purple_presence_is_online(purple_buddy_get_presence(buddy)) && color_offline) {
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), buddy, color_offline);
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_offline);
+ 	}
+ }
+ 
+@@ -1557,18 +1573,33 @@ update_buddy_display(PurpleBuddy *buddy, FinchBlist *ggblist)
+ 		draw_tooltip(ggblist);
+ 
+ 	if (purple_presence_is_idle(purple_buddy_get_presence(buddy))) {
+-		gnt_tree_set_row_flags(GNT_TREE(ggblist->tree), buddy, bflag | GNT_TEXT_FLAG_DIM);
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), buddy, color_idle);
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_idle);
+ 		if (buddy == purple_contact_get_priority_buddy(contact))
+-			gnt_tree_set_row_flags(GNT_TREE(ggblist->tree), contact, cflag | GNT_TEXT_FLAG_DIM);
+-		else
+-			update_buddy_display(purple_contact_get_priority_buddy(contact), ggblist);
+-	} else {
+-		gnt_tree_set_row_flags(GNT_TREE(ggblist->tree), buddy, bflag);
++			gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_idle);
++	} else if (purple_presence_is_available(purple_buddy_get_presence(buddy)) && color_available) {
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), buddy, color_available);
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_available);
+ 		if (buddy == purple_contact_get_priority_buddy(contact))
+-			gnt_tree_set_row_flags(GNT_TREE(ggblist->tree), contact, cflag);
+-		else
+-			update_buddy_display(purple_contact_get_priority_buddy(contact), ggblist);
++			gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_available);
++	} else if (purple_presence_is_online(purple_buddy_get_presence(buddy)) &&
++			!purple_presence_is_available(purple_buddy_get_presence(buddy)) && color_away) {
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), buddy, color_away);
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_away);
++		if (buddy == purple_contact_get_priority_buddy(contact))
++			gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_away);
++	} else if (!purple_presence_is_online(purple_buddy_get_presence(buddy)) && color_offline) {
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), buddy, color_offline);
++		gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_offline);
++		if (buddy == purple_contact_get_priority_buddy(contact))
++			gnt_tree_set_row_color(GNT_TREE(ggblist->tree), contact, color_offline);
+ 	}
++	gnt_tree_set_row_flags(GNT_TREE(ggblist->tree), buddy, bflag);
++	if (buddy == purple_contact_get_priority_buddy(contact))
++		gnt_tree_set_row_flags(GNT_TREE(ggblist->tree), contact, cflag);
++
++	if (buddy != purple_contact_get_priority_buddy(contact))
++			update_buddy_display(purple_contact_get_priority_buddy(contact), ggblist);
+ }
+ 
+ static void
+@@ -1736,8 +1767,43 @@ redraw_blist(const char *name, PurplePrefType type, gconstpointer val, gpointer
+ 	draw_tooltip(ggblist);
+ }
+ 
++static int
++get_color(char *key)
++{
++#if GLIB_CHECK_VERSION(2,6,0)
++	int fg = 0, bg = 0;
++	gsize n;
++	char **vals;
++	vals = gnt_style_get_string_list(NULL, key, &n);
++	if (vals && n == 2) {
++		fg = gnt_colors_get_color(vals[0]);
++		bg = gnt_colors_get_color(vals[1]);
++		return gnt_color_add_pair(fg, bg);
++	}
++	return 0;
++#else
++	return 0;
++#endif
++}
++
+ void finch_blist_init()
+ {
++	short fg, bg;
++	if (has_colors()) {
++		pair_content(GNT_COLOR_NORMAL, &fg, &bg);
++		color_available = get_color("color-available");
++		if (!color_available)
++			color_available = gnt_color_add_pair(COLOR_GREEN, bg);
++		color_away = get_color("color-away");
++		if (!color_away)
++			color_away = gnt_color_add_pair(COLOR_BLUE, bg);
++		color_idle = get_color("color-idle");
++		if (!color_idle)
++			color_idle = gnt_color_add_pair(COLOR_CYAN, bg);
++		color_offline = get_color("color-offline");
++		if (!color_offline)
++			color_offline = gnt_color_add_pair(COLOR_RED, bg);
++	}
+ 	purple_prefs_add_none(PREF_ROOT);
+ 	purple_prefs_add_none(PREF_ROOT "/size");
+ 	purple_prefs_add_int(PREF_ROOT "/size/width", 20);
+@@ -2550,4 +2616,3 @@ void finch_blist_set_size(int width, int height)
+ {
+ 	gnt_widget_set_size(ggblist->window, width, height);
+ }
+-
+diff --git a/finch/libgnt/gntcolors.c b/finch/libgnt/gntcolors.c
+index 11cdf62..2ef0247 100644
+--- a/finch/libgnt/gntcolors.c
++++ b/finch/libgnt/gntcolors.c
+@@ -33,6 +33,7 @@
+ #include <string.h>
+ 
+ static gboolean hascolors;
++static int custom_type = GNT_COLORS;
+ static struct
+ {
+ 	short r, g, b;
+@@ -137,8 +138,8 @@ gnt_uninit_colors()
+ }
+ 
+ #if GLIB_CHECK_VERSION(2,6,0)
+-static int
+-get_color(char *key)
++int
++gnt_colors_get_color(char *key)
+ {
+ 	int color;
+ 	gboolean custom = can_use_custom_color();
+@@ -196,7 +197,7 @@ void gnt_colors_parse(GKeyFile *kfile)
+ 				int color = -1;
+ 
+ 				key = g_ascii_strdown(key, -1);
+-				color = get_color(key);
++				color = gnt_colors_get_color(key);
+ 				g_free(key);
+ 				if (color == -1)
+ 					continue;
+@@ -237,8 +238,8 @@ void gnt_color_pairs_parse(GKeyFile *kfile)
+ 			GntColorType type = 0;
+ 			gchar *fgc = g_ascii_strdown(list[0], -1);
+ 			gchar *bgc = g_ascii_strdown(list[1], -1);
+-			int fg = get_color(fgc);
+-			int bg = get_color(bgc);
++			int fg = gnt_colors_get_color(fgc);
++			int bg = gnt_colors_get_color(bgc);
+ 			g_free(fgc);
+ 			g_free(bgc);
+ 			if (fg == -1 || bg == -1)
+@@ -287,3 +288,8 @@ int gnt_color_pair(int pair)
+ 		  pair == GNT_COLOR_TITLE_D || pair == GNT_COLOR_DISABLED) ? 0 : A_STANDOUT));
+ }
+ 
++int gnt_color_add_pair(int fg, int bg)
++{
++	init_pair(custom_type, fg, bg);
++	return custom_type++;
++}
+diff --git a/finch/libgnt/gntcolors.h b/finch/libgnt/gntcolors.h
+index 8dd8359..30198d1 100644
+--- a/finch/libgnt/gntcolors.h
++++ b/finch/libgnt/gntcolors.h
+@@ -86,6 +86,16 @@ void gnt_colors_parse(GKeyFile *kfile);
+  */
+ void gnt_color_pairs_parse(GKeyFile *kfile);
+ 
++/**
++ * Parse a string color
++ *
++ * @param kfile The string value
++ *
++ * @return A color
++ *
++ * @since 2.3.1 (gnt), 2.3.1 (pidgin)
++ */
++int gnt_colors_get_color(char *key);
+ #endif
+ 
+ /**
+@@ -101,4 +111,15 @@ void gnt_color_pairs_parse(GKeyFile *kfile);
+  */
+ int gnt_color_pair(int color);
+ 
++/**
++ * Adds a color definition
++ *
++ * @param fg   Foreground
++ * @param bg   Background
++ *
++ * @return  A color pair
++ *
++ * @since 2.3.1
++ */
++int gnt_color_add_pair(int fg, int bg);
+ #endif
+diff --git a/finch/libgnt/gntstyle.c b/finch/libgnt/gntstyle.c
+index 6d5e605..736bb77 100644
+--- a/finch/libgnt/gntstyle.c
++++ b/finch/libgnt/gntstyle.c
+@@ -59,6 +59,21 @@ char *gnt_style_get_from_name(const char *group, const char *key)
+ #endif
+ }
+ 
++char **gnt_style_get_string_list(const char *group, const char *key, gsize *length)
++{
++#if GLIB_CHECK_VERSION(2,6,0)
++	const char *prg = g_get_prgname();
++	if ((group == NULL || *group == '\0') && prg &&
++			g_key_file_has_group(gkfile, prg))
++		group = prg;
++	if (!group)
++		group = "general";
++	return g_key_file_get_string_list(gkfile, group, key, length, NULL);
++#else
++	return NULL;
++#endif
++}
++
+ gboolean gnt_style_get_bool(GntStyle style, gboolean def)
+ {
+ 	const char * str;
+diff --git a/finch/libgnt/gntstyle.h b/finch/libgnt/gntstyle.h
+index 4537f1e..d9d3a2e 100644
+--- a/finch/libgnt/gntstyle.h
++++ b/finch/libgnt/gntstyle.h
+@@ -65,6 +65,20 @@ const char *gnt_style_get(GntStyle style);
+ char *gnt_style_get_from_name(const char *group, const char *key);
+ 
+ /**
++ * Get the value of a preference in ~/.gntrc.
++ *
++ * @param group   The name of the group in the keyfile. If @c NULL, the prgname
++ *                will be used first, if available. Otherwise, "general" will be used.
++ * @param key     The key
++ * @param length  Return location for the number of strings returned, or NULL
++ *
++ * @return        NULL terminated string array. The array should be freed with g_strfreev().
++ *
++ * @since 2.3.1 (gnt), 2.3.1 (pidgin)
++ */
++char **gnt_style_get_string_list(const char *group, const char *key, gsize *length);
++
++/**
+  * Parse a boolean preference. For example, if 'value' is "false" (ignoring case)
+  * or "0", the return value will be @c FALSE, otherwise @c TRUE.
+  *
+diff --git a/finch/libgnt/gnttree.c b/finch/libgnt/gnttree.c
+index 7b490e6..01f0545 100644
+--- a/finch/libgnt/gnttree.c
++++ b/finch/libgnt/gnttree.c
+@@ -75,6 +75,7 @@ struct _GntTreeRow
+ 	                               If choice is true, then child will be NULL */
+ 	gboolean isselected;
+ 	GntTextFormatFlags flags;
++	int color;
+ 
+ 	GntTreeRow *parent;
+ 	GntTreeRow *child;
+@@ -522,9 +523,14 @@ redraw_tree(GntTree *tree)
+ 		else
+ 		{
+ 			if (flags & GNT_TEXT_FLAG_DIM)
+-				attr |= (A_DIM | gnt_color_pair(GNT_COLOR_DISABLED));
++				if (row->color)
++					attr |= (A_DIM | gnt_color_pair(row->color));
++				else
++					attr |= (A_DIM | gnt_color_pair(GNT_COLOR_DISABLED));
+ 			else if (flags & GNT_TEXT_FLAG_HIGHLIGHT)
+ 				attr |= (A_DIM | gnt_color_pair(GNT_COLOR_HIGHLIGHT));
++			else if (row->color)
++				attr |= gnt_color_pair(row->color);
+ 			else
+ 				attr |= gnt_color_pair(GNT_COLOR_NORMAL);
+ 		}
+@@ -1559,6 +1565,16 @@ void gnt_tree_set_row_flags(GntTree *tree, void *key, GntTextFormatFlags flags)
+ 	redraw_tree(tree);	/* XXX: It shouldn't be necessary to redraw the whole darned tree */
+ }
+ 
++void gnt_tree_set_row_color(GntTree *tree, void *key, int color)
++{
++	GntTreeRow *row = g_hash_table_lookup(tree->hash, key);
++	if (!row || row->color == color)
++		return;
++
++	row->color = color;
++	redraw_tree(tree);
++}
++
+ void gnt_tree_set_selected(GntTree *tree , void *key)
+ {
+ 	int dist;
+diff --git a/finch/libgnt/gnttree.h b/finch/libgnt/gnttree.h
+index 9be004d..b72f3d9 100644
+--- a/finch/libgnt/gnttree.h
++++ b/finch/libgnt/gnttree.h
+@@ -325,6 +325,15 @@ gboolean gnt_tree_get_choice(GntTree *tree, void *key);
+ void gnt_tree_set_row_flags(GntTree *tree, void *key, GntTextFormatFlags flags);
+ 
+ /**
++ * Set color for the text in a row in the tree.
++ *
++ * @param tree   The tree
++ * @param key    The key for the row
++ * @param color  The color
++ */
++void gnt_tree_set_row_color(GntTree *, void *, int);
++
++/**
+  * Select a row.
+  *
+  * @param tree  The tree
+-- 
+1.7.10.4
+

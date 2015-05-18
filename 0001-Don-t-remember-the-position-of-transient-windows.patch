@@ -1,0 +1,28 @@
+From 5c979dc913596cf62c54e44e136606ce3b2743b2 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Wed, 4 Apr 2007 23:48:22 +0000
+Subject: [PATCH] Don't remember the position of transient windows
+
+--HG--
+extra : convert_revision : ba140d64bfb136f055845ebc11afac44587be3b7
+---
+ finch/libgnt/gntwm.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/finch/libgnt/gntwm.c b/finch/libgnt/gntwm.c
+index 06edeaa..f8df894 100644
+--- a/finch/libgnt/gntwm.c
++++ b/finch/libgnt/gntwm.c
+@@ -1427,7 +1427,8 @@ void gnt_wm_move_window(GntWM *wm, GntWidget *widget, int x, int y)
+ 	move_panel(node->panel, y, x);
+ 
+ 	g_signal_emit(wm, signals[SIG_MOVED], 0, node);
+-	if (gnt_style_get_bool(GNT_STYLE_REMPOS, TRUE) && GNT_IS_BOX(widget)) {
++	if (gnt_style_get_bool(GNT_STYLE_REMPOS, TRUE) && GNT_IS_BOX(widget) &&
++		!GNT_WIDGET_IS_FLAG_SET(widget, GNT_WIDGET_TRANSIENT)) {
+ 		const char *title = GNT_BOX(widget)->title;
+ 		if (title) {
+ 			GntPosition *p = g_new0(GntPosition, 1);
+-- 
+1.7.10.4
+

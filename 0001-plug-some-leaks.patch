@@ -1,0 +1,86 @@
+From c7f8a7bb710492f9fc9ea10d81e95d1c0459de1f Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Thu, 29 Mar 2007 02:35:54 +0000
+Subject: [PATCH] plug some leaks
+
+--HG--
+extra : convert_revision : b9c411db6d7058f65c3e497f8fc74f2ead9da827
+---
+ finch/gntft.c             |    4 ++--
+ finch/libgnt/gntfilesel.c |    2 +-
+ finch/libgnt/gntstyle.c   |    3 +--
+ finch/libgnt/gntwm.c      |    1 +
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/finch/gntft.c b/finch/gntft.c
+index 6062c2f..278c69b 100644
+--- a/finch/gntft.c
++++ b/finch/gntft.c
+@@ -392,8 +392,6 @@ finch_xfer_dialog_update_xfer(PurpleXfer *xfer)
+ 	elapsed = (xfer->start_time > 0 ? now - xfer->start_time : 0);
+ 	kbps    = (elapsed > 0 ? (kb_sent / elapsed) : 0);
+ 
+-	kbsec = g_strdup_printf(_("%.2f KB/s"), kbps);
+-
+ 	g_return_if_fail(xfer_dialog != NULL);
+ 	g_return_if_fail(xfer != NULL);
+ 
+@@ -413,6 +411,7 @@ finch_xfer_dialog_update_xfer(PurpleXfer *xfer)
+ 
+ 	size_str      = purple_str_size_to_units(purple_xfer_get_size(xfer));
+ 	remaining_str = purple_str_size_to_units(purple_xfer_get_bytes_remaining(xfer));
++	kbsec = g_strdup_printf(_("%.2f KB/s"), kbps);
+ 
+ 	gnt_tree_change_text(GNT_TREE(xfer_dialog->tree), xfer, COLUMN_PROGRESS,
+ 			g_ascii_dtostr(prog_str, sizeof(prog_str), purple_xfer_get_progress(xfer) * 100.));
+@@ -421,6 +420,7 @@ finch_xfer_dialog_update_xfer(PurpleXfer *xfer)
+ 	gnt_tree_change_text(GNT_TREE(xfer_dialog->tree), xfer, COLUMN_SPEED, kbsec);
+ 	g_free(size_str);
+ 	g_free(remaining_str);
++	g_free(kbsec);
+ 	if (purple_xfer_is_completed(xfer)) {
+ 		gnt_tree_change_text(GNT_TREE(xfer_dialog->tree), xfer, COLUMN_STATUS, _("Finished"));
+ 		gnt_tree_change_text(GNT_TREE(xfer_dialog->tree), xfer, COLUMN_REMAINING, _("Finished"));
+diff --git a/finch/libgnt/gntfilesel.c b/finch/libgnt/gntfilesel.c
+index e267909..45ed7e9 100644
+--- a/finch/libgnt/gntfilesel.c
++++ b/finch/libgnt/gntfilesel.c
+@@ -464,7 +464,7 @@ char *gnt_file_sel_get_selected_file(GntFileSel *sel)
+ {
+ 	char *ret;
+ 	if (sel->dirsonly) {
+-		ret = g_strdup(g_path_get_dirname(gnt_entry_get_text(GNT_ENTRY(sel->location))));
++		ret = g_path_get_dirname(gnt_entry_get_text(GNT_ENTRY(sel->location)));
+ 	} else {
+ 		ret = g_strdup(gnt_entry_get_text(GNT_ENTRY(sel->location)));
+ 	}
+diff --git a/finch/libgnt/gntstyle.c b/finch/libgnt/gntstyle.c
+index 27cd6d7..bbe5db5 100644
+--- a/finch/libgnt/gntstyle.c
++++ b/finch/libgnt/gntstyle.c
+@@ -218,9 +218,8 @@ read_general_style(GKeyFile *kfile)
+ 	{
+ 		for (i = 0; styles[i].style; i++)
+ 		{
+-			error = NULL;
+ 			str_styles[styles[i].en] =
+-					g_key_file_get_string(kfile, "general", styles[i].style, &error);
++					g_key_file_get_string(kfile, "general", styles[i].style, NULL);
+ 		}
+ 	}
+ 	g_strfreev(keys);
+diff --git a/finch/libgnt/gntwm.c b/finch/libgnt/gntwm.c
+index bc6e89e..1389b74 100644
+--- a/finch/libgnt/gntwm.c
++++ b/finch/libgnt/gntwm.c
+@@ -246,6 +246,7 @@ read_window_positions(GntWM *wm)
+ 	}
+ 
+ 	g_free(filename);
++	g_key_file_free(gfile);
+ #endif
+ }
+ 
+-- 
+1.7.10.4
+

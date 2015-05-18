@@ -1,0 +1,32 @@
+From 875481c7ad243397a121940cae2057fd0930c031 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Tue, 26 Sep 2006 23:02:40 +0000
+Subject: [PATCH] [gaim-migrate @ 17376] Patch from Richard Nelson (wabz) to
+ fix a crash. This is probably what Luke is getting.
+
+I had it fixed in my local tree, not sure why I hadn't committed.
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : 8637a12a65cf331b4eb2e71dd0dd95a2872f20f2
+---
+ console/gntblist.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/console/gntblist.c b/console/gntblist.c
+index ecab6aa..547e2e3 100644
+--- a/console/gntblist.c
++++ b/console/gntblist.c
+@@ -1647,7 +1647,7 @@ reconstruct_accounts_menu()
+ 		GaimConnection *gc = gaim_account_get_connection(account);
+ 		GaimPlugin *prpl;
+ 		
+-		if (!GAIM_CONNECTION_IS_CONNECTED(gc))
++		if (!gc || !GAIM_CONNECTION_IS_CONNECTED(gc))
+ 			continue;
+ 		prpl = gc->prpl;
+ 
+-- 
+1.7.10.4
+

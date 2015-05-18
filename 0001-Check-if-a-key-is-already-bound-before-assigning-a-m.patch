@@ -1,0 +1,98 @@
+From bc3edff1e9bd61383061fe36ca74d37e3c053e99 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sun, 11 May 2008 07:20:42 +0000
+Subject: [PATCH] Check if a key is already bound before assigning a menu
+ trigger
+
+--HG--
+extra : convert_revision : f1dabaefda9742c6d71cba71697771bf74710f8a
+---
+ ChangeLog                  |    1 +
+ ChangeLog.API              |    3 +++
+ finch/libgnt/gntbindable.c |    7 +++++++
+ finch/libgnt/gntbindable.h |   10 ++++++++++
+ finch/libgnt/gntmenu.c     |    3 ++-
+ 5 files changed, 23 insertions(+), 1 deletion(-)
+
+diff --git a/ChangeLog b/ChangeLog
+index 8dd9b02..a68d2f1 100644
+--- a/ChangeLog
++++ b/ChangeLog
+@@ -53,6 +53,7 @@ version 2.x.x:
+ 
+ 	Finch:
+ 	* New default binding ctrl+x to open context menus.
++	* Menu triggers and other bindings will no longer conflict.
+ 
+ version 2.4.1 (03/31/2008):
+ 	http://developer.pidgin.im/query?status=closed&milestone=2.4.1
+diff --git a/ChangeLog.API b/ChangeLog.API
+index 0e41d4d..48d41e5 100644
+--- a/ChangeLog.API
++++ b/ChangeLog.API
+@@ -11,6 +11,9 @@ version 2.x.x:
+ 		* Callbacks to Purple::Util::fetch_url and the
+ 		  Purple::Request::* functions can now be specified as both
+ 		  strings (the name of the callback function) and as coderefs.
++	Finch:
++		libgnt:
++		* Added gnt_bindable_check_key to check if a keystroke is bound.
+ 
+ version 2.4.0 (02/29/2008):
+ 	libpurple:
+diff --git a/finch/libgnt/gntbindable.c b/finch/libgnt/gntbindable.c
+index 5a5c6cf..c2be911 100644
+--- a/finch/libgnt/gntbindable.c
++++ b/finch/libgnt/gntbindable.c
+@@ -339,6 +339,13 @@ gnt_bindable_perform_action_key(GntBindable *bindable, const char *keys)
+ 	return FALSE;
+ }
+ 
++gboolean
++gnt_bindable_check_key(GntBindable *bindable, const char *keys) {
++	GntBindableClass *klass = GNT_BINDABLE_CLASS(GNT_BINDABLE_GET_CLASS(bindable));
++	GntBindableActionParam *param = g_hash_table_lookup(klass->bindings, keys);
++	return (param && param->action);
++}
++
+ static void
+ register_binding(GntBindableClass *klass, const char *name, const char *trigger, GList *list)
+ {
+diff --git a/finch/libgnt/gntbindable.h b/finch/libgnt/gntbindable.h
+index 3b386df..418ea41 100644
+--- a/finch/libgnt/gntbindable.h
++++ b/finch/libgnt/gntbindable.h
+@@ -149,6 +149,16 @@ void gnt_bindable_register_binding(GntBindableClass *klass, const char *name, co
+ gboolean gnt_bindable_perform_action_key(GntBindable *bindable, const char *keys);
+ 
+ /**
++ * Discover if a key is bound.
++ *
++ * @param bindable  The bindable object.
++ * @param keys      The key to check for.
++ *
++ * @return  @c TRUE if the the key has an action associated with it.
++ */
++gboolean gnt_bindable_check_key(GntBindable *bindable, const char *keys);
++
++/**
+  * Perform an action on a bindable object.
+  *
+  * @param bindable  The bindable object.
+diff --git a/finch/libgnt/gntmenu.c b/finch/libgnt/gntmenu.c
+index e81226d..621083a 100644
+--- a/finch/libgnt/gntmenu.c
++++ b/finch/libgnt/gntmenu.c
+@@ -168,7 +168,8 @@ assign_triggers(GntMenu *menu)
+ 			continue;
+ 		while (*text) {
+ 			char ch = tolower(*text++);
+-			if (ch == ' ' || bools[(int)GET_VAL(ch)])
++			char t[2] = {ch, '\0'};
++			if (ch == ' ' || bools[(int)GET_VAL(ch)] || gnt_bindable_check_key(GNT_BINDABLE(menu), t))
+ 				continue;
+ 			trigger = ch;
+ 			break;
+-- 
+1.7.10.4
+

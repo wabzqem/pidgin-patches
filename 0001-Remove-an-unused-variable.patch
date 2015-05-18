@@ -1,0 +1,26 @@
+From 27d1da17dc3fb69bd97565ce950b0535337fda2e Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Wed, 28 May 2008 05:29:23 +0000
+Subject: [PATCH] Remove an unused variable
+
+--HG--
+extra : convert_revision : d425c6047a5d33761dfc83c887d89f4a643a7da2
+---
+ libpurple/protocols/oscar/oscar.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/libpurple/protocols/oscar/oscar.c b/libpurple/protocols/oscar/oscar.c
+index f48aaeb..f0fc8f3 100644
+--- a/libpurple/protocols/oscar/oscar.c
++++ b/libpurple/protocols/oscar/oscar.c
+@@ -3692,7 +3692,6 @@ static int purple_icqinfo(OscarData *od, FlapConnection *conn, FlapFrame *fr, ..
+ 	struct buddyinfo *bi;
+ 	gchar who[16];
+ 	PurpleNotifyUserInfo *user_info;
+-	GString *tmp;
+ 	gchar *utf8;
+ 	gchar *buf;
+ 	const gchar *alias;
+-- 
+1.7.10.4
+

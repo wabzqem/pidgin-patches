@@ -1,0 +1,33 @@
+From 137418832622276e1cfe3abf6ea1dc116b4c2be2 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Mon, 3 Dec 2007 06:55:53 +0000
+Subject: [PATCH] disapproval of revision
+ '5cbcf3668bfa3e074e6dce1bbdcbf19bd160826c'
+
+--HG--
+extra : convert_revision : 0e466dc371b6b9abc7e5c3e8fbccfb5eabd06439
+---
+ finch/libgnt/gntcolors.c |    7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/finch/libgnt/gntcolors.c b/finch/libgnt/gntcolors.c
+index b75a7f8..c248519 100644
+--- a/finch/libgnt/gntcolors.c
++++ b/finch/libgnt/gntcolors.c
+@@ -294,13 +294,6 @@ int gnt_color_pair(int pair)
+ 
+ int gnt_color_add_pair(int fg, int bg)
+ {
+-	int i;
+-	for (i = 1; i < custom_type; i++) {
+-		short f, b;
+-		if (pair_content(i, &f, &b) != ERR &&
+-				f == fg && b == bg)
+-			return i;
+-	}
+ 	init_pair(custom_type, fg, bg);
+ 	return custom_type++;
+ }
+-- 
+1.7.10.4
+

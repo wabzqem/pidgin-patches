@@ -1,0 +1,26 @@
+From f6080b8e1a613586697e46497dd5ccda951a5127 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Fri, 13 Apr 2007 02:43:11 +0000
+Subject: [PATCH] Add myself to help->about
+
+--HG--
+extra : convert_revision : a8ea964dd9e4151a66c96e143b2532a0b4a2ae4f
+---
+ pidgin/gtkdialogs.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/pidgin/gtkdialogs.c b/pidgin/gtkdialogs.c
+index 93ea62a..fa6c01d 100644
+--- a/pidgin/gtkdialogs.c
++++ b/pidgin/gtkdialogs.c
+@@ -77,6 +77,7 @@ static struct developer developers[] = {
+ 	{"Christian 'ChipX86' Hammond",	N_("developer & webmaster"), NULL},
+ 	{"Gary 'grim' Kramlich",		N_("developer"), NULL},
+ 	{"Richard 'rlaager' Laager",	N_("developer"), NULL},
++	{"Richard 'wabz' Nelson",		N_("developer"), NULL},
+ 	{"Christopher 'siege' O'Brien", N_("developer"), "taliesein@users.sf.net"},
+ 	{"Bartosz Oler",		N_("developer"), NULL},
+ 	{"Etan 'deryni' Reisner",       N_("developer"), NULL},
+-- 
+1.7.10.4
+

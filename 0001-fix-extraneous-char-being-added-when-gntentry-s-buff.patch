@@ -1,0 +1,42 @@
+From 352323764fb965e047ef572d345c7871caf8bdbf Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Wed, 14 Mar 2007 07:56:48 +0000
+Subject: [PATCH] fix extraneous char being added when gntentry's buffer grows
+ fix crash when entering wide chars
+
+--HG--
+extra : convert_revision : 757348e257be05fd941d26ae0e775214e855af98
+---
+ console/libgnt/gntentry.c |    2 +-
+ console/libgnt/gntkeys.c  |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/console/libgnt/gntentry.c b/console/libgnt/gntentry.c
+index b2213d4..f01f0b6 100644
+--- a/console/libgnt/gntentry.c
++++ b/console/libgnt/gntentry.c
+@@ -563,7 +563,7 @@ gnt_entry_key_pressed(GntWidget *widget, const char *text)
+ 				if (entry->end + len - entry->start >= entry->buffer)
+ 				{
+ 					/* This will cause the buffer to grow */
+-					char *tmp = g_strdup_printf("%s%*s", entry->start, len, "");
++					char *tmp = g_strdup(entry->start);
+ 					gnt_entry_set_text_internal(entry, tmp);
+ 					g_free(tmp);
+ 				}
+diff --git a/console/libgnt/gntkeys.c b/console/libgnt/gntkeys.c
+index 6fcfc39..3009235 100644
+--- a/console/libgnt/gntkeys.c
++++ b/console/libgnt/gntkeys.c
+@@ -121,6 +121,8 @@ int gnt_keys_find_combination(const char *path)
+ 	struct _node *n = &root;
+ 
+ 	while (*path && n->next[*path] && !(n->flags & IS_END)) {
++		if (g_utf8_find_next_char(path, NULL) - path > 1)
++			return 0;
+ 		n = n->next[*path++];
+ 		depth++;
+ 	}
+-- 
+1.7.10.4
+

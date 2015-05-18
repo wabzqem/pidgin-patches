@@ -1,0 +1,27 @@
+From 294c866c8735262ebac94596bd6bdec9ad5969d2 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Fri, 13 Apr 2007 02:42:53 +0000
+Subject: [PATCH] This is called Finch
+
+--HG--
+extra : convert_revision : f4305f0fe2c1231a618d2eaa48a08ba76821b0e4
+---
+ finch/finch.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/finch/finch.c b/finch/finch.c
+index 64f3a03..2d9e499 100644
+--- a/finch/finch.c
++++ b/finch/finch.c
+@@ -320,7 +320,7 @@ init_libpurple(int argc, char **argv)
+ 	}
+ 	/* show version message */
+ 	if (opt_version) {
+-		printf("purple-text %s\n", VERSION);
++		printf("Finch %s\n", VERSION);
+ 		return 0;
+ 	}
+ 
+-- 
+1.7.10.4
+

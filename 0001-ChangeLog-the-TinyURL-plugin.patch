@@ -1,0 +1,26 @@
+From a0ca96ccefb7bbf8e8a0bbb92f0e9c22d3e67b60 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Mon, 6 Apr 2009 11:23:07 +0000
+Subject: [PATCH] ChangeLog the TinyURL plugin
+
+--HG--
+extra : convert_revision : 4545104f42d520fa38246ab7e84d665acae5f424
+---
+ ChangeLog |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/ChangeLog b/ChangeLog
+index 56b28bc..69f3953 100644
+--- a/ChangeLog
++++ b/ChangeLog
+@@ -40,6 +40,7 @@ version 2.6.0 (??/??/2009):
+ 	Finch:
+ 	* The hardware cursor is updated correctly. This will be useful
+ 	  especially for users of braille terminals, screen readers etc.
++	* Added a TinyURL plugin, which aids copying longer URLs.
+ 
+ version 2.5.5 (03/01/2009):
+ 	libpurple:
+-- 
+1.7.10.4
+

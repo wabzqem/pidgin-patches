@@ -1,0 +1,28 @@
+From bdfed1844e469a5042c123d28693c9201337b3da Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 14 Apr 2007 13:20:05 +0000
+Subject: [PATCH] ...only for groups
+
+--HG--
+extra : convert_revision : 12829451c50832122bfa79b9c52c382a1410c8a0
+---
+ finch/gntblist.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/finch/gntblist.c b/finch/gntblist.c
+index 43cde3a..44a723e 100644
+--- a/finch/gntblist.c
++++ b/finch/gntblist.c
+@@ -2109,7 +2109,8 @@ void finch_blist_show()
+ static void
+ group_collapsed(GntWidget *widget, PurpleBlistNode *node, gboolean collapsed, gpointer null)
+ {
+-	purple_blist_node_set_bool(node, "collapsed", collapsed);
++	if (PURPLE_BLIST_NODE_IS_GROUP(node))
++		purple_blist_node_set_bool(node, "collapsed", collapsed);
+ }
+ 
+ static void
+-- 
+1.7.10.4
+

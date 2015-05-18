@@ -1,0 +1,29 @@
+From efda55cff6545a82cd7d26bd0af54eead9dd455a Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sun, 27 May 2007 00:15:41 +0000
+Subject: [PATCH] Changelog last change
+
+--HG--
+extra : convert_revision : 543930d44a4fdda89805a26d4e2ce1e678cb5070
+---
+ ChangeLog |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/ChangeLog b/ChangeLog
+index b5d5290..5649869 100644
+--- a/ChangeLog
++++ b/ChangeLog
+@@ -1,5 +1,10 @@
+ Pidgin and Finch: The Pimpin' Penguin IM Clients That're Good for the Soul
+ 
++version 2.0.2 (??/??/????):
++
++	Finch:
++	* Auto account reconnecting
++
+ version 2.0.1 (05/24/2007):
+ 	* Buddy list update speedups when buddy icons are not being
+ 	  displayed.  (Scott Wolchok)
+-- 
+1.7.10.4
+

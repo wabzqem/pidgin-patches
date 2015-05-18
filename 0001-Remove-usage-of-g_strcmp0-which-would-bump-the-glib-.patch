@@ -1,0 +1,37 @@
+From acb35debe7a5fe16d0652b5f45402e79540534a2 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Mon, 6 Apr 2009 13:18:36 +0000
+Subject: [PATCH] Remove usage of g_strcmp0 (which would bump the glib version
+ requirement) where strcmp will do nicely
+
+--HG--
+extra : convert_revision : 3e071df6d421d193c1bec1dea8606e1a059bcb02
+---
+ finch/plugins/gnttinyurl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/finch/plugins/gnttinyurl.c b/finch/plugins/gnttinyurl.c
+index 872978b..fbf1a90 100644
+--- a/finch/plugins/gnttinyurl.c
++++ b/finch/plugins/gnttinyurl.c
+@@ -140,7 +140,7 @@ static GList *extract_urls(char *text) {
+ 					}
+ 
+ 					url_buf = g_strndup(c, t - c);
+-					if (!g_list_find_custom(ret, url_buf, (GCompareFunc)g_strcmp0)) {
++					if (!g_list_find_custom(ret, url_buf, (GCompareFunc)strcmp)) {
+ 						purple_debug_info("TinyURL", "Added URL %s\n", url_buf);
+ 						ret = g_list_append(ret, g_strdup(url_buf));
+ 					}
+@@ -170,7 +170,7 @@ static GList *extract_urls(char *text) {
+ 							t--;
+ 						}
+ 						url_buf = g_strndup(c, t - c);
+-						if (!g_list_find_custom(ret, url_buf, (GCompareFunc)g_strcmp0)) {
++						if (!g_list_find_custom(ret, url_buf, (GCompareFunc)strcmp)) {
+ 							purple_debug_info("TinyURL", "Added URL %s\n", url_buf);
+ 							ret = g_list_append(ret, url_buf);
+ 						}
+-- 
+1.7.10.4
+

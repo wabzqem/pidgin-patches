@@ -1,0 +1,52 @@
+From 999f63ff2eb4b8011090856e790041fd78877f10 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Tue, 27 Mar 2007 00:50:51 +0000
+Subject: [PATCH] typos
+
+--HG--
+extra : convert_revision : 47400327390c7f3affa40f72061d5445daa5caef
+---
+ README            |    6 +++---
+ pidgin/gtkutils.h |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/README b/README
+index db508e9..e393e89 100644
+--- a/README
++++ b/README
+@@ -9,7 +9,7 @@ AIM, ICQ, Jabber, MSN and Yahoo!, among others.
+ Pidgin is an graphical IM client written in C which uses the GTK+
+ toolkit.
+ 
+-Finish is a text-based IM client written in C which uses the ncurses
++Finch is a text-based IM client written in C which uses the ncurses
+ toolkit.
+ 
+ These programs are not endorsed by, nor affiliated with, AOL nor any
+@@ -26,8 +26,8 @@ to see what build options are available.
+ 
+ In order to compile Pidgin you need to have GTK+ 2.0 installed (as
+ well as the development files!). The configure script will fail if you
+-don't.  If you don't have GTK+ 2.0 installed, you shoudl install it
+-using your distributions package management tools.
++don't.  If you don't have GTK+ 2.0 installed, you should install it
++using your distribution's package management tools.
+ 
+ For sound support, you also need gstreamer 0.10 or higher. For
+ spellchecking support, you need libgtkspell (http://gtkspell.sf.net/).
+diff --git a/pidgin/gtkutils.h b/pidgin/gtkutils.h
+index cc27573..70d0c95 100644
+--- a/pidgin/gtkutils.h
++++ b/pidgin/gtkutils.h
+@@ -393,7 +393,7 @@ GdkPixbuf *pidgin_create_prpl_icon(PurpleAccount *account, PidginPrplIconSize si
+  * @param primitive  The status primitive
+  * @param w          The widget to render this
+  * @param size       The icon size to render at
+- * @retun A GdkPixbuf, created from stock
++ * @return A GdkPixbuf, created from stock
+  */
+ GdkPixbuf * pidgin_create_status_icon(PurpleStatusPrimitive primitive, GtkWidget *w, const char *size);
+ 
+-- 
+1.7.10.4
+

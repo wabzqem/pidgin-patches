@@ -1,0 +1,35 @@
+From 710994eeded4d9cf29db4a0eb7505f63e99d06af Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sun, 15 Oct 2006 00:48:35 +0000
+Subject: [PATCH] [gaim-migrate @ 17482] Patch from Richard Nelson (wabz).
+ This turns off some flags so that the empty spaces at the
+ end of the lines do not have underlines or blinking.
+
+committer: Sadrul Habib Chowdhury <sadrul@pidgin.im>
+
+--HG--
+extra : convert_revision : 27c5da6a4535c8bf61206eb54a453791afb9ca60
+---
+ console/libgnt/gnttextview.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/console/libgnt/gnttextview.c b/console/libgnt/gnttextview.c
+index 10bba76..a864c8b 100644
+--- a/console/libgnt/gnttextview.c
++++ b/console/libgnt/gnttextview.c
+@@ -51,10 +51,10 @@ gnt_text_view_draw(GntWidget *widget)
+ 			*end = '\0';
+ 			wattrset(widget->window, seg->flags);
+ 			wprintw(widget->window, "%s", (view->string->str + seg->start));
+-			if (!iter->next)
+-				whline(widget->window, ' ' | seg->flags, widget->priv.width - line->length - 1);
+ 			*end = back;
+ 		}
++		wattroff(widget->window, A_UNDERLINE | A_BLINK | A_REVERSE);
++		whline(widget->window, ' ', widget->priv.width - line->length - 1);
+ 	}
+ 
+ 	scrcol = widget->priv.width - 1;
+-- 
+1.7.10.4
+

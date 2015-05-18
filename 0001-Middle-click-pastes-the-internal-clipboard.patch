@@ -1,0 +1,58 @@
+From e3d7966b3a1e3039cc619fe0810c50f797c62c07 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sun, 11 May 2008 07:24:59 +0000
+Subject: [PATCH] Middle click pastes the internal clipboard
+
+--HG--
+extra : convert_revision : 0d3a3dbf15f3b76dc4ee06bc9177442fe4906bc5
+---
+ ChangeLog               |    2 ++
+ finch/libgnt/gntentry.c |   12 ++++++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/ChangeLog b/ChangeLog
+index a68d2f1..47deebd 100644
+--- a/ChangeLog
++++ b/ChangeLog
+@@ -54,6 +54,8 @@ version 2.x.x:
+ 	Finch:
+ 	* New default binding ctrl+x to open context menus.
+ 	* Menu triggers and other bindings will no longer conflict.
++	* Middle click pastes the internal clipboard (when mouse support is
++	  enabled).
+ 
+ version 2.4.1 (03/31/2008):
+ 	http://developer.pidgin.im/query?status=closed&milestone=2.4.1
+diff --git a/finch/libgnt/gntentry.c b/finch/libgnt/gntentry.c
+index 4d32356..ddf513e 100644
+--- a/finch/libgnt/gntentry.c
++++ b/finch/libgnt/gntentry.c
+@@ -839,6 +839,17 @@ gnt_entry_lost_focus(GntWidget *widget)
+ 	entry_redraw(widget);
+ }
+ 
++static gboolean
++gnt_entry_clicked(GntWidget *widget, GntMouseEvent event, int x, int y)
++{
++	if (event == GNT_MIDDLE_MOUSE_DOWN) {
++		clipboard_paste(GNT_BINDABLE(widget), NULL);
++		return TRUE;
++	}
++	return FALSE;
++
++}
++
+ static void
+ gnt_entry_class_init(GntEntryClass *klass)
+ {
+@@ -846,6 +857,7 @@ gnt_entry_class_init(GntEntryClass *klass)
+ 	char s[2] = {erasechar(), 0};
+ 
+ 	parent_class = GNT_WIDGET_CLASS(klass);
++	parent_class->clicked = gnt_entry_clicked;
+ 	parent_class->destroy = gnt_entry_destroy;
+ 	parent_class->draw = gnt_entry_draw;
+ 	parent_class->map = gnt_entry_map;
+-- 
+1.7.10.4
+

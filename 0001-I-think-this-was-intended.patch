@@ -1,0 +1,27 @@
+From 05e7e13e257847652e5cd2370369374eb6fec255 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Tue, 16 Oct 2007 02:43:43 +0000
+Subject: [PATCH] I think this was intended
+
+--HG--
+extra : convert_revision : 2859800860a726be81d3a19e19a5138521211b27
+---
+ libpurple/protocols/oscar/oscar.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libpurple/protocols/oscar/oscar.c b/libpurple/protocols/oscar/oscar.c
+index 600a2cf..b2e5810 100644
+--- a/libpurple/protocols/oscar/oscar.c
++++ b/libpurple/protocols/oscar/oscar.c
+@@ -1801,7 +1801,7 @@ static int purple_parse_oncoming(OscarData *od, FlapConnection *conn, FlapFrame
+ 
+ 	if (have_status_message)
+ 	{
+-		if ((status_id == OSCAR_STATUS_ID_AVAILABLE) && (info->itmsurl != NULL))
++		if ((!strcmp(status_id, OSCAR_STATUS_ID_AVAILABLE)) && (info->itmsurl != NULL))
+ 		{
+ 			char *itmsurl;
+ 			itmsurl = oscar_encoding_to_utf8(account, info->itmsurl_encoding,
+-- 
+1.7.10.4
+

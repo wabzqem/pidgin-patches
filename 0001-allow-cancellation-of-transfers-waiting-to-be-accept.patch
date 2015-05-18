@@ -1,0 +1,58 @@
+From 347b9178745039dc4a0dc62608ce755a633ddae0 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Tue, 27 Mar 2007 00:52:19 +0000
+Subject: [PATCH] allow cancellation of transfers waiting to be accepted
+
+--HG--
+extra : convert_revision : ac156097f694ba8977900a053e669e480c15e274
+---
+ finch/gntft.c |   16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
+
+diff --git a/finch/gntft.c b/finch/gntft.c
+index c4eb7ff..6062c2f 100644
+--- a/finch/gntft.c
++++ b/finch/gntft.c
+@@ -158,18 +158,12 @@ static void
+ stop_button_cb(GntButton *button)
+ {
+ 	PurpleXfer *selected_xfer = gnt_tree_get_selection_data(GNT_TREE(xfer_dialog->tree));
+-	if (selected_xfer && selected_xfer->status == PURPLE_XFER_STATUS_STARTED)
++	if (selected_xfer && selected_xfer->status != PURPLE_XFER_STATUS_CANCEL_LOCAL &&
++			selected_xfer->status != PURPLE_XFER_STATUS_CANCEL_REMOTE &&
++			selected_xfer->status != PURPLE_XFER_STATUS_DONE)
+ 		purple_xfer_cancel_local(selected_xfer);
+ }
+ 
+-#if 0
+-static void
+-tree_selection_changed_cb(GntTree *tree, GntTreeRow *old, GntTreeRow *current, gpointer n)
+-{
+-	xfer_dialog->selected_xfer = (PurpleXfer *)gnt_tree_get_selection_data(tree);
+-}
+-#endif
+-
+ /**************************************************************************
+  * Dialog Building Functions
+  **************************************************************************/
+@@ -209,8 +203,7 @@ finch_xfer_dialog_new(void)
+ 	gnt_tree_set_col_width(GNT_TREE(tree), COLUMN_STATUS, 10);
+ 	gnt_tree_set_show_title(GNT_TREE(tree), TRUE);
+ 	gnt_box_add_widget(GNT_BOX(window), tree);
+-	/*g_signal_connect(G_OBJECT(tree), "selection-changed",*/
+-					/*G_CALLBACK(tree_selection_changed_cb), NULL);*/
++
+ 	checkbox = gnt_check_box_new( _("Close this window when all transfers finish"));
+ 	gnt_check_box_set_checked(GNT_CHECK_BOX(checkbox),
+ 								 !xfer_dialog->keep_open);
+@@ -430,6 +423,7 @@ finch_xfer_dialog_update_xfer(PurpleXfer *xfer)
+ 	g_free(remaining_str);
+ 	if (purple_xfer_is_completed(xfer)) {
+ 		gnt_tree_change_text(GNT_TREE(xfer_dialog->tree), xfer, COLUMN_STATUS, _("Finished"));
++		gnt_tree_change_text(GNT_TREE(xfer_dialog->tree), xfer, COLUMN_REMAINING, _("Finished"));
+ 	} else {
+ 		gnt_tree_change_text(GNT_TREE(xfer_dialog->tree), xfer, COLUMN_STATUS, _("Transferring"));
+ 	}
+-- 
+1.7.10.4
+

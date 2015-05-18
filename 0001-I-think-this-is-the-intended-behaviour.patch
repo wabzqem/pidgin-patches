@@ -1,0 +1,35 @@
+From 6375d41200397eaa847f84f81d23c9e591c45f7a Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 14 Jul 2007 01:23:56 +0000
+Subject: [PATCH] I think this is the intended behaviour
+
+--HG--
+extra : convert_revision : e281de32313e50dbff5d4e48ff636a657de9a23e
+---
+ finch/libgnt/gntstyle.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/finch/libgnt/gntstyle.c b/finch/libgnt/gntstyle.c
+index f97bc44..5f23c23 100644
+--- a/finch/libgnt/gntstyle.c
++++ b/finch/libgnt/gntstyle.c
+@@ -48,11 +48,11 @@ const char *gnt_style_get(GntStyle style)
+ char *gnt_style_get_from_name(const char *group, const char *key)
+ {
+ #if GLIB_CHECK_VERSION(2,6,0)
+-	if (group == NULL && (group = g_get_prgname()) != NULL && *group != '\0') {
+-		return g_key_file_get_value(gkfile, group, key, NULL);
+-	}
+-
+-	if (!group || !*group)
++	const char *prg = g_get_prgname();
++	if ((group == NULL || *group != '\0') && prg &&
++			g_key_file_has_group(gkfile, prg))
++		group = prg;
++	if (!group)
+ 		group = "general";
+ 	return g_key_file_get_value(gkfile, group, key, NULL);
+ #endif
+-- 
+1.7.10.4
+

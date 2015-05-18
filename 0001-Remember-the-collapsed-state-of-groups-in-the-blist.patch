@@ -1,0 +1,94 @@
+From 72d34f9237936349205825bab4ac5b38a060b4af Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 14 Apr 2007 12:39:33 +0000
+Subject: [PATCH] Remember the collapsed state of groups in the blist
+
+--HG--
+extra : convert_revision : 99dca5d3283c16535bf00cd8f9758efc693a7a5a
+---
+ finch/gntblist.c        |    9 +++++++++
+ finch/libgnt/genmarshal |    1 +
+ finch/libgnt/gnttree.c  |   10 ++++++++++
+ 3 files changed, 20 insertions(+)
+
+diff --git a/finch/gntblist.c b/finch/gntblist.c
+index 08e3559..43cde3a 100644
+--- a/finch/gntblist.c
++++ b/finch/gntblist.c
+@@ -446,6 +446,8 @@ add_group(PurpleGroup *group, FinchBlist *ggblist)
+ 		return;
+ 	node->ui_data = gnt_tree_add_row_after(GNT_TREE(ggblist->tree), group,
+ 			gnt_tree_create_row(GNT_TREE(ggblist->tree), get_display_name(node)), NULL, NULL);
++	gnt_tree_set_expanded(GNT_TREE(ggblist->tree), node,
++		!purple_blist_node_get_bool(node, "collapsed"));
+ }
+ 
+ static const char *
+@@ -2105,6 +2107,12 @@ void finch_blist_show()
+ }
+ 
+ static void
++group_collapsed(GntWidget *widget, PurpleBlistNode *node, gboolean collapsed, gpointer null)
++{
++	purple_blist_node_set_bool(node, "collapsed", collapsed);
++}
++
++static void
+ blist_show(PurpleBuddyList *list)
+ {
+ 	if (ggblist == NULL)
+@@ -2171,6 +2179,7 @@ blist_show(PurpleBuddyList *list)
+ 	g_signal_connect(G_OBJECT(ggblist->tree), "selection_changed", G_CALLBACK(selection_changed), ggblist);
+ 	g_signal_connect(G_OBJECT(ggblist->tree), "key_pressed", G_CALLBACK(key_pressed), ggblist);
+ 	g_signal_connect(G_OBJECT(ggblist->tree), "context-menu", G_CALLBACK(context_menu), ggblist);
++	g_signal_connect(G_OBJECT(ggblist->tree), "collapse-toggled", G_CALLBACK(group_collapsed), NULL);
+ 	g_signal_connect_after(G_OBJECT(ggblist->tree), "clicked", G_CALLBACK(blist_clicked), ggblist);
+ 	g_signal_connect(G_OBJECT(ggblist->tree), "activate", G_CALLBACK(selection_activate), ggblist);
+ 	g_signal_connect_data(G_OBJECT(ggblist->tree), "gained-focus", G_CALLBACK(draw_tooltip),
+diff --git a/finch/libgnt/genmarshal b/finch/libgnt/genmarshal
+index df284ad..3c0bb19 100644
+--- a/finch/libgnt/genmarshal
++++ b/finch/libgnt/genmarshal
+@@ -8,3 +8,4 @@ BOOLEAN:INT,INT,INT
+ BOOLEAN:POINTER,POINTER,POINTER
+ BOOLEAN:INT,INT,INT,POINTER
+ VOID:STRING,STRING
++VOID:POINTER,BOOLEAN
+diff --git a/finch/libgnt/gnttree.c b/finch/libgnt/gnttree.c
+index fd24b54..449c203 100644
+--- a/finch/libgnt/gnttree.c
++++ b/finch/libgnt/gnttree.c
+@@ -13,6 +13,7 @@ enum
+ 	SIG_SELECTION_CHANGED,
+ 	SIG_SCROLLED,
+ 	SIG_TOGGLED,
++	SIG_COLLAPSED,
+ 	SIGS,
+ };
+ 
+@@ -702,6 +703,7 @@ gnt_tree_key_pressed(GntWidget *widget, const char *text)
+ 		{
+ 			row->collapsed = !row->collapsed;
+ 			redraw_tree(tree);
++			g_signal_emit(tree, signals[SIG_COLLAPSED], 0, row->key, row->collapsed);
+ 		}
+ 		else if (row && row->choice)
+ 		{
+@@ -855,6 +857,14 @@ gnt_tree_class_init(GntTreeClass *klass)
+ 					 NULL, NULL,
+ 					 g_cclosure_marshal_VOID__POINTER,
+ 					 G_TYPE_NONE, 1, G_TYPE_POINTER);
++	signals[SIG_COLLAPSED] = 
++		g_signal_new("collapse-toggled",
++					 G_TYPE_FROM_CLASS(klass),
++					 G_SIGNAL_RUN_LAST,
++					 0,
++					 NULL, NULL,
++					 gnt_closure_marshal_VOID__POINTER_BOOLEAN,
++					 G_TYPE_NONE, 2, G_TYPE_POINTER, G_TYPE_BOOLEAN);
+ 
+ 	gnt_bindable_class_register_action(bindable, "move-up", action_up,
+ 				GNT_KEY_UP, NULL);
+-- 
+1.7.10.4
+

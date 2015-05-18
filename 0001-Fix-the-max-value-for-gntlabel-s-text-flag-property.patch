@@ -1,0 +1,30 @@
+From 09a0f228b82f4ba2b574e65ec3a0b33f0dbeb4e0 Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Wed, 14 Nov 2007 04:07:08 +0000
+Subject: [PATCH] Fix the max value for gntlabel's text-flag property
+
+--HG--
+extra : convert_revision : 9eaee5e47f782b1a1e847091ad99b9c8870ab266
+---
+ finch/libgnt/gntlabel.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/finch/libgnt/gntlabel.c b/finch/libgnt/gntlabel.c
+index 5a256c9..4fbfae6 100644
+--- a/finch/libgnt/gntlabel.c
++++ b/finch/libgnt/gntlabel.c
+@@ -130,7 +130,10 @@ gnt_label_class_init(GntLabelClass *klass)
+ 			PROP_TEXT_FLAG,
+ 			g_param_spec_int("text-flag", "Text flag",
+ 				"Text attribute to use when displaying the text in the label.",
+-				GNT_TEXT_FLAG_NORMAL, GNT_TEXT_FLAG_HIGHLIGHT, GNT_TEXT_FLAG_NORMAL,
++				GNT_TEXT_FLAG_NORMAL,
++				GNT_TEXT_FLAG_NORMAL|GNT_TEXT_FLAG_BOLD|GNT_TEXT_FLAG_UNDERLINE|
++				GNT_TEXT_FLAG_BLINK|GNT_TEXT_FLAG_DIM|GNT_TEXT_FLAG_HIGHLIGHT,
++				GNT_TEXT_FLAG_NORMAL,
+ 				G_PARAM_READWRITE|G_PARAM_STATIC_NAME|G_PARAM_STATIC_NICK|G_PARAM_STATIC_BLURB
+ 			)
+ 		);
+-- 
+1.7.10.4
+

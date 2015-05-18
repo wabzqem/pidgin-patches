@@ -1,0 +1,44 @@
+From e24b4cc43a14e65201e07c2bc43b917e1a344ede Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Mon, 19 Mar 2007 23:49:30 +0000
+Subject: [PATCH] Group autocomplete for buddy adding
+
+--HG--
+extra : convert_revision : d4f7294caf2fe548806608d216c63f9e6011d303
+---
+ finch/gntblist.c   |    1 +
+ finch/gntrequest.c |    6 ++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/finch/gntblist.c b/finch/gntblist.c
+index c545e82..5d4dcf3 100644
+--- a/finch/gntblist.c
++++ b/finch/gntblist.c
+@@ -304,6 +304,7 @@ finch_request_add_buddy(PurpleAccount *account, const char *username, const char
+ 
+ 	field = purple_request_field_string_new("group", _("Group"), grp, FALSE);
+ 	purple_request_field_group_add_field(group, field);
++	purple_request_field_set_type_hint(field, "group");
+ 
+ 	field = purple_request_field_account_new("account", _("Account"), NULL);
+ 	purple_request_field_account_set_show_all(field, FALSE);
+diff --git a/finch/gntrequest.c b/finch/gntrequest.c
+index edf6cc8..5c1e191 100644
+--- a/finch/gntrequest.c
++++ b/finch/gntrequest.c
+@@ -398,6 +398,12 @@ finch_request_fields(const char *title, const char *primary,
+ 						gnt_entry_add_suggest(GNT_ENTRY(entry), purple_buddy_get_name((PurpleBuddy*)node));
+ 					}
+ 					gnt_entry_set_always_suggest(GNT_ENTRY(entry), TRUE);
++				} else if (hint && !strcmp(hint, "group")) {
++					PurpleBlistNode *node;
++					for (node = purple_blist_get_root(); node; node = node->next) {
++						if (PURPLE_BLIST_NODE_IS_GROUP(node))
++							gnt_entry_add_suggest(GNT_ENTRY(entry), ((PurpleGroup *)node)->name);
++					}
+ 				}
+ 				gnt_box_add_widget(GNT_BOX(hbox), entry);
+ 				field->ui_data = entry;
+-- 
+1.7.10.4
+

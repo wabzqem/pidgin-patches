@@ -1,0 +1,54 @@
+From 34df2d61b8814c719acf23aa8021d022cceca93e Mon Sep 17 00:00:00 2001
+From: Richard Nelson <wabz@pidgin.im>
+Date: Sat, 19 May 2007 02:43:28 +0000
+Subject: [PATCH] Mark strings for translation
+
+--HG--
+extra : convert_revision : 49922af0141ac5ca1baaa557377a5343ae781fb9
+---
+ finch/gntplugin.c |    5 ++---
+ finch/gntprefs.c  |    2 +-
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/finch/gntplugin.c b/finch/gntplugin.c
+index f0aacf8..13c7f9b 100644
+--- a/finch/gntplugin.c
++++ b/finch/gntplugin.c
+@@ -67,11 +67,10 @@ decide_conf_button(PurplePlugin *plugin)
+ static void
+ plugin_toggled_cb(GntWidget *tree, PurplePlugin *plugin, gpointer null)
+ {
+-	/* TODO: Mark these strings for translation after the freeze */
+ 	if (gnt_tree_get_choice(GNT_TREE(tree), plugin))
+ 	{
+ 		if (!purple_plugin_load(plugin)) {
+-			purple_notify_error(NULL, "ERROR", "loading plugin failed", NULL);
++			purple_notify_error(NULL, _("ERROR"), _("loading plugin failed"), NULL);
+ 			gnt_tree_set_choice(GNT_TREE(tree), plugin, FALSE);
+ 		}
+ 	}
+@@ -80,7 +79,7 @@ plugin_toggled_cb(GntWidget *tree, PurplePlugin *plugin, gpointer null)
+ 		GntWidget *win;
+ 
+ 		if (!purple_plugin_unload(plugin)) {
+-			purple_notify_error(NULL, "ERROR", "unloading plugin failed", NULL);
++			purple_notify_error(NULL, _("ERROR"), _("unloading plugin failed"), NULL);
+ 			gnt_tree_set_choice(GNT_TREE(tree), plugin, TRUE);
+ 		}
+ 
+diff --git a/finch/gntprefs.c b/finch/gntprefs.c
+index 7fc2f6d..61c716f 100644
+--- a/finch/gntprefs.c
++++ b/finch/gntprefs.c
+@@ -76,7 +76,7 @@ static GList *
+ get_idle_options()
+ {
+ 	GList *list = NULL;
+-	list = g_list_append(list, "Based on keyboard use"); /* XXX: string freeze */
++	list = g_list_append(list, _("Based on keyboard use"));
+ 	list = g_list_append(list, "system");
+ 	list = g_list_append(list, (char*)_("From last sent message"));
+ 	list = g_list_append(list, "purple");
+-- 
+1.7.10.4
+
